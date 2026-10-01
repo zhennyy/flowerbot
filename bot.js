@@ -32,6 +32,18 @@ fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '30d' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Фото букетов лежат в проекте: public/photos (видно в VS Code и на GitHub).
+// Файл «<id товара>-название.jpg» один раз ставится товару; если потом заменить фото в админке — не перезапишется.
+const PHOTOS_DIR = path.join(__dirname, 'public', 'photos');
+if (fs.existsSync(PHOTOS_DIR)) {
+  for (const file of fs.readdirSync(PHOTOS_DIR)) {
+    const m = file.match(/^(\d+)-[\w.-]+\.(jpe?g|png|webp)$/i);
+    if (!m || db.getSetting(`photo_applied:${file}`, null)) continue;
+    if (db.setProductPhoto(Number(m[1]), `/photos/${file}`)) console.log(`📷 Фото из проекта: ${file}`);
+    db.setSetting(`photo_applied:${file}`, new Date().toISOString());
+  }
+}
+
 // Экранируем текст для сообщений Telegram в режиме HTML (чтобы «<» в открытке ничего не сломал)
 const esc = (s = '') => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const rub = (n) => n.toLocaleString('ru-RU') + ' ₽';
@@ -470,7 +482,7 @@ function cleanProduct(b = {}) {
   }
   if (!p.category || !p.name) throw new Error('Заполните название и категорию');
   if (!(p.price > 0)) throw new Error('Цена должна быть больше нуля');
-  if (p.photo_url && !/^(https:\/\/|\/uploads\/)/.test(p.photo_url)) throw new Error('Ссылка на фото должна начинаться с https://');
+  if (p.photo_url && !/^(https:\/\/|\/uploads\/|\/photos\/)/.test(p.photo_url)) throw new Error('Ссылка на фото должна начинаться с https://');
   return p;
 }
 const handle = (fn) => async (req, res) => {
@@ -589,6 +601,14 @@ app.post('/api/admin/orders/:id/photo', owner, handle(async (req) => {
 }));
 
 // Календарь: выходные и лимит заказов на интервал
+// Резервная копия: бот присылает владелице ZIP в чат — каталог, заказы, отзывы, переписка, настройки, фото
+app.post('/api/admin/backup', owner, handle(async () => {
+  const { makeBackup } = require('./backup');
+  const b = makeBackup({ uploadsDir: UPLOAD_DIR, photosDir: PHOTOS_DIR });
+  await bot.telegram.sendDocument(OWNER_ID, { source: b.buffer, filename: b.filename },
+    { caption: `📦 Резервная копия «Флёра»\nФото: ${b.photos} · заказы и каталог — в Excel-файлах внутри.\nХраните у себя: там телефоны и адреса покупателей.` });
+  return { ok: true, size: b.buffer.length };
+}));
 app.get('/api/admin/calendar', owner, handle(() => getCalendar()));
 // Сколько ждать ответа по фото букета (минут; 0 — не подтверждать автоматически)
 app.get('/api/admin/photo-timeout', owner, handle(() => ({ minutes: db.getSetting('photo_timeout', 30) })));

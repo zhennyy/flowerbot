@@ -233,7 +233,7 @@
   <div class="list" id="orders"></div>
 </div>
 <div id="productsView" hidden>
-  <button class="add" onclick="editProduct(null)">＋ Добавить букет</button>
+  <div style="display:flex;gap:8px"><button class="add" style="flex:2" onclick="editProduct(null)">＋ Добавить букет</button><button class="add" style="flex:1" onclick="makeBackup()">📦 Копия</button></div>
   <div class="list" id="products"></div>
 </div>
 
@@ -349,6 +349,10 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt
 const fmtDate = d => d.split("-").reverse().join(".");
 
 // Все запросы подписаны данными Telegram — сервер проверит, что это именно владелица
+async function makeBackup(){
+  try { await api('/backup', { method: 'POST', body: '{}' }); tg?.showAlert ? tg.showAlert('Готово — архив с резервной копией в чате с ботом 📦') : alert('Готово'); }
+  catch (e) { tg?.showAlert ? tg.showAlert(e.message) : alert(e.message); }
+}
 async function api(path, opts = {}){
   const res = await fetch("/api/admin" + path, {
     ...opts,

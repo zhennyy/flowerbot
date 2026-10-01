@@ -231,6 +231,8 @@ const parseOrder = (o) => o && { ...o, items: JSON.parse(o.items) };
 
 module.exports = {
   STATUSES,
+  raw: db, // прямой доступ — для резервной копии и разовых правок
+  setProductPhoto: (id, url) => db.prepare('UPDATE products SET photo_url = ? WHERE id = ?').run(url, id).changes,
 
   // ── Товары ──
   // Для витрины — только те, что в наличии
