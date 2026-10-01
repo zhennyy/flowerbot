@@ -232,10 +232,22 @@ app.post('/api/delivery-quote', requireTelegram(BOT_TOKEN), quoteLimit, async (r
 });
 app.get('/api/delivery-info', (req, res) => {
   const t = delivery.getTariff();
-  res.json({ shop: delivery.SHOP.name, city: t.city, region: t.region, freeFrom: t.freeFrom });
+  res.json({ shop: delivery.SHOP.name, city: t.city, region: t.region, freeFrom: t.freeFrom, payOnline: payments.enabled });
 });
 
 // Для кнопки «Повторить заказ»: отдаём покупателю ЕГО заказ, чтобы собрать корзину заново
+// «Мои заказы» в витрине: все заказы покупателя (только его собственные)
+app.get('/api/my-orders', requireTelegram(BOT_TOKEN), (req, res) => {
+  res.json(db.getUserOrdersAll(req.tgUser.id).map((o) => ({
+    id: o.id, status: o.status, status_label: db.STATUSES[o.status].replace(/^\S+\s/, ''),
+    items: o.items.map(({ id, name, qty, unit, price }) => ({ id, name, qty, unit, price })),
+    total: o.total, delivery_fee: o.delivery_fee, when: niceWhen(o), address: o.address,
+    card_text: o.card_text, recipient: o.recipient, rating: o.rating,
+    payment_status: o.payment_status, pay_url: o.payment_status === 'pending' ? o.pay_url : null,
+    photo_status: o.photo_status,
+  })));
+});
+
 app.get('/api/my-orders/:id', requireTelegram(BOT_TOKEN), (req, res) => {
   const o = db.getOrder(Number(req.params.id));
   if (!o || String(o.user_id) !== String(req.tgUser.id)) return res.status(404).json({ error: 'Заказ не найден' });
@@ -324,8 +336,8 @@ app.post('/api/orders', requireTelegram(BOT_TOKEN), orderLimit, async (req, res)
         description: `Заказ №${id} в цветочной лавке «Флёр»`,
         returnUrl: `https://t.me/${bot.botInfo?.username || ''}`,
       });
-      db.setPayment(id, pay.id);
       const url = pay.confirmation.confirmation_url;
+      db.setPayment(id, pay.id, url);
       const msg = await bot.telegram.sendMessage(order.user_id,
         `🌷 <b>Заказ №${id} оформлен!</b>\nОсталось оплатить — после оплаты флорист сразу возьмётся за букет.\n\n${orderText(saved, false, false)}`,
         { parse_mode: 'HTML', ...Markup.inlineKeyboard([Markup.button.url(`💳 Оплатить ${rub(saved.total)}`, url)]) }).catch(() => null);

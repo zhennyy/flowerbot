@@ -25,6 +25,27 @@
   .hbadge{position:absolute;top:-6px;right:-6px;background:var(--accent);color:#fff;border-radius:999px;font-size:12px;font-weight:700;
     min-width:20px;height:20px;line-height:20px;padding:0 6px}
   .hcart.bump{animation:bump .45s ease}
+  .hbtns{display:flex;gap:8px;flex:none}
+  /* Мои заказы */
+  .myord{background:var(--card);border-radius:18px;padding:14px;margin:10px 16px;box-shadow:var(--shadow);border-left:4px solid var(--stc)}
+  .st-new{--stc:#d9668b;--stbg:rgba(217,102,139,.14)} .st-confirmed{--stc:#5b8def;--stbg:rgba(91,141,239,.14)}
+  .st-assembling{--stc:#a173d6;--stbg:rgba(161,115,214,.15)} .st-delivering{--stc:#e0a030;--stbg:rgba(224,160,48,.16)}
+  .st-done{--stc:#4caf7d;--stbg:rgba(76,175,125,.15)} .st-cancelled{--stc:#8a7d83;--stbg:rgba(138,125,131,.15)}
+  .mo-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .mo-head b{font-size:16px} .mo-when{color:var(--muted);font-size:13px;margin-top:2px}
+  .mo-pill{background:var(--stbg);color:var(--stc);font-size:12.5px;font-weight:600;padding:4px 10px;border-radius:999px;white-space:nowrap}
+  .mo-track{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:12px 0 4px}
+  .mo-track span{height:5px;border-radius:3px;background:var(--line)} .mo-track span.on{background:var(--stc)}
+  .mo-steps{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+  .mo-items{list-style:none;padding:0;margin:10px 0 0;font-size:14px}
+  .mo-items li{display:flex;justify-content:space-between;gap:10px;padding:2px 0}
+  .mo-items li span:last-child{color:var(--muted);white-space:nowrap}
+  .mo-total{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-weight:600}
+  .mo-total small{color:var(--muted);font-weight:400}
+  .mo-note{margin-top:8px;font-size:13px;color:var(--stc)}
+  .mo-act{display:flex;gap:8px;margin-top:12px}
+  .mo-act button{flex:1;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:10px;font-weight:600;cursor:pointer;font-size:14px}
+  .mo-act .pay{background:var(--accent);color:#fff;border-color:var(--accent)}
   .cart-empty{text-align:center;color:var(--muted);padding:60px 24px;line-height:1.6}
   .cart-empty .big{margin-top:16px;max-width:280px}
   .brand{font-family:"Cormorant Garamond",serif;font-size:34px;font-weight:600;letter-spacing:.5px}
@@ -148,6 +169,11 @@
   .counter{text-align:right;font-size:12px;color:var(--muted);margin-top:4px}
   .error{color:var(--danger);font-size:14px;margin:8px 0;min-height:1em;text-align:center}
   .hidden{display:none}
+  .paym{display:flex;gap:12px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--bg)}
+  .paym.on{border-color:var(--accent);background:var(--accent-soft)}
+  .pm-ic{font-size:26px;flex:none} .pm-sub{color:var(--muted);font-size:12.5px;margin-top:2px;line-height:1.35}
+  .pm-ok{margin-left:auto;color:var(--accent);font-weight:700;font-size:18px}
+  .pm-steps{color:var(--muted);font-size:12.5px;line-height:1.45;margin-top:10px}
   /* Размеры S/M/L */
   .sizes{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin:4px 0 8px}
   .size{border:1px solid var(--line);background:var(--bg);border-radius:14px;padding:10px 8px;cursor:pointer;display:flex;flex-direction:column;gap:2px;align-items:center}
@@ -206,7 +232,10 @@
 <header>
   <div><div class="brand">Флёр<span>.</span></div>
   <div class="tagline">Свежие цветы с доставкой за 2 часа</div></div>
-  <button class="hcart" id="hcart" onclick="go('cartPage')" aria-label="Корзина">🛒<span class="hbadge" id="hbadge" hidden></span></button>
+  <div class="hbtns">
+    <button class="hcart" id="hord" onclick="go('ordersPage')" aria-label="Мои заказы">📦<span class="hbadge" id="obadge" hidden></span></button>
+    <button class="hcart" id="hcart" onclick="go('cartPage')" aria-label="Корзина">🛒<span class="hbadge" id="hbadge" hidden></span></button>
+  </div>
 </header>
 <div class="search" id="searchBox">🔍<input id="q" placeholder="Розы, тюльпаны, в коробке…" autocomplete="off"><button class="clear" id="clearQ" aria-label="Очистить">✕</button></div>
 <div class="hint" id="hint"></div>
@@ -234,6 +263,12 @@
   <div class="cart-empty" id="cartEmpty" hidden><div style="font-size:52px">🌿</div>Корзина пока пуста<br>Выберите букет в каталоге
     <br><button class="big" onclick="go(null)">Перейти в каталог</button></div>
   <div class="footer" id="cartFooter"><button class="big" onclick="go('checkoutPage')">Оформить заказ</button></div>
+</section>
+
+<!-- Экран: мои заказы -->
+<section class="page" id="ordersPage">
+  <div class="page-head"><button class="back" onclick="go(null)">←</button><h1>Мои заказы</h1></div>
+  <div id="myOrders"><div class="cart-empty">Загружаем… 🌸</div></div>
 </section>
 
 <!-- Экран: оформление -->
@@ -266,6 +301,15 @@
         <label for="f_recipient">Имя и телефон получателя</label>
         <input type="text" id="f_recipient" maxlength="100" placeholder="Анна, +7 900 …">
       </div>
+    </fieldset>
+    <fieldset id="payBox">
+      <legend>💳 Оплата</legend>
+      <div class="paym on" id="payOnline">
+        <div class="pm-ic">💳</div>
+        <div><b>Картой онлайн</b><div class="pm-sub">Банковская карта или СБП через ЮKassa. Безопасно — данные карты вводятся на странице банка</div></div>
+        <span class="pm-ok">✓</span>
+      </div>
+      <div class="pm-steps" id="payNote">Следующий шаг — кнопка «Оплатить», откроется защищённая страница ЮKassa. Как только оплата пройдёт, флорист возьмётся за букет, а подтверждение придёт в чат 🌷</div>
     </fieldset>
     <fieldset>
       <legend>💌 Открытка</legend>
@@ -635,7 +679,8 @@ $("cartbar").onclick = () => go("cartPage");
 let current = null;
 function go(page){
   closeSheet();
-  ["cartPage", "checkoutPage", "donePage"].forEach(id => $(id).classList.toggle("show", id === page));
+  ["cartPage", "checkoutPage", "donePage", "ordersPage"].forEach(id => $(id).classList.toggle("show", id === page));
+  if (page === "ordersPage") loadMyOrders(true);
   current = page;
   if (page === "cartPage") renderCartPage();
   if (page === "checkoutPage") { quoteData = null; prepareCheckout(); } // корзина могла измениться — пересчитаем доставку
@@ -693,12 +738,21 @@ function requestQuote(delay){
 }
 function updateSubmit(){
   const fee = quoteData?.fee || 0;
-  $("submitBtn").textContent = `Заказать · ${rub(cartTotal() + fee)}`;
+  $("submitBtn").textContent = `${payOnline ? "Перейти к оплате" : "Заказать"} · ${rub(cartTotal() + fee)}`;
 }
+let payOnline = false;
 async function loadDeliveryInfo(){
   try {
     const d = await (await fetch("/api/delivery-info", { headers: { "ngrok-skip-browser-warning": "1" } })).json();
     $("deliveryHint").textContent = `от ${rub(Math.min(...d.city.map(r => r.price)))} · по адресу`;
+    // Онлайн-оплата включена — показываем блок «Оплата», иначе — как договоримся с флористом
+    payOnline = !!d.payOnline;
+    if (!payOnline) {
+      $("payOnline").outerHTML = `<div class="paym on"><div class="pm-ic">🤝</div><div><b>При получении или по договорённости</b>
+        <div class="pm-sub">Флорист свяжется с вами и подскажет, как удобнее оплатить</div></div><span class="pm-ok">✓</span></div>`;
+      $("payNote").textContent = "";
+    }
+    updateSubmit();
   } catch {}
 }
 
@@ -774,7 +828,7 @@ async function submitOrder(e){
     if (!res.ok) throw new Error(data.error || "Не получилось оформить заказ");
     store.set("name", body.customer_name); store.set("phone", body.phone); store.set("address", body.address);
     cart = {}; renderCart(); renderGrid(); slot = ""; dayInfoFor = "";
-    load(); // обновим остатки в каталоге
+    load(); loadMyOrders(false); // обновим остатки в каталоге и «Мои заказы»
     $("f_card").value = ""; $("f_comment").value = ""; $("t_card").checked = false; $("cardBox").classList.add("hidden");
     $("doneTitle").textContent = data.pay_url ? `Заказ №${data.id} оформлен!` : `Заказ №${data.id} принят!`;
     // Онлайн-оплата: кнопка ведёт на страницу ЮKassa, после оплаты подтверждение придёт в чат
@@ -811,8 +865,8 @@ async function load(){
   renderChips(); renderGrid(); renderCart();
 }
 // «Повторить заказ» из чата: витрина открывается с ?repeat=12 — собираем ту же корзину
-async function repeatOrder(){
-  const id = new URLSearchParams(location.search).get("repeat");
+async function repeatOrder(fromId){
+  const id = fromId || new URLSearchParams(location.search).get("repeat");
   if (!id || !tg?.initData) return;
   try {
     const res = await fetch(`/api/my-orders/${encodeURIComponent(id)}`, { headers: { "X-Init-Data": tg.initData, "ngrok-skip-browser-warning": "1" } });
@@ -831,7 +885,53 @@ async function repeatOrder(){
     tg.showAlert ? tg.showAlert(msg) : alert(msg);
   } catch {}
 }
-load().then(repeatOrder); loadDeliveryInfo();
+// ─── Мои заказы ──────────────────────────────────────────
+const STEPS = ["Принят", "Подтверждён", "Сборка", "В пути", "Доставлен"];
+const STEP_KEYS = ["new", "confirmed", "assembling", "delivering", "done"];
+let myOrders = [];
+async function loadMyOrders(render){
+  if (!tg?.initData) { if (render) $("myOrders").innerHTML = `<div class="cart-empty">Откройте магазин через Telegram-бота</div>`; return; }
+  try {
+    const res = await fetch("/api/my-orders", { headers: { "X-Init-Data": tg.initData, "ngrok-skip-browser-warning": "1" } });
+    myOrders = await res.json();
+  } catch { if (render) $("myOrders").innerHTML = `<div class="cart-empty">Не удалось загрузить заказы 😔</div>`; return; }
+  // Значок: сколько заказов сейчас в работе
+  const active = myOrders.filter(o => ["new", "confirmed", "assembling", "delivering"].includes(o.status) && o.payment_status !== "canceled").length;
+  $("obadge").hidden = !active; $("obadge").textContent = active;
+  if (render) renderMyOrders();
+}
+function renderMyOrders(){
+  if (!myOrders.length) {
+    $("myOrders").innerHTML = `<div class="cart-empty"><div style="font-size:52px">📦</div>Заказов пока нет<br>Самое время выбрать букет 🌷
+      <br><button class="big" onclick="go(null)">Перейти в каталог</button></div>`;
+    return;
+  }
+  $("myOrders").innerHTML = myOrders.map(o => {
+    const step = STEP_KEYS.indexOf(o.status);
+    const unpaid = o.payment_status === "pending";
+    const label = unpaid ? "Ждёт оплаты" : o.status_label;
+    const note = unpaid ? "💳 Осталось оплатить — после оплаты флорист возьмётся за букет"
+      : o.photo_status === "pending" ? "📸 Флорист прислал фото букета — ответьте в чате с ботом"
+      : o.status === "delivering" ? "🚚 Курьер уже в пути, держите телефон рядом"
+      : "";
+    return `<article class="myord st-${o.status}">
+      <div class="mo-head"><div><b>Заказ №${o.id}</b><div class="mo-when">${esc(o.when)} · ${esc(o.address)}</div></div>
+        <span class="mo-pill">${esc(label)}</span></div>
+      ${o.status !== "cancelled" ? `<div class="mo-track">${STEPS.map((_, i) => `<span class="${i <= step && !unpaid ? "on" : ""}"></span>`).join("")}</div>
+        <div class="mo-steps"><span>${STEPS[0]}</span><span>${STEPS[4]}</span></div>` : ""}
+      <ul class="mo-items">${o.items.map(i => `<li><span>${esc(i.name)}</span><span>× ${i.qty}${i.unit ? " шт" : ""}</span></li>`).join("")}</ul>
+      <div class="mo-total"><span>Итого</span><span>${rub(o.total)} ${o.delivery_fee ? `<small>с доставкой</small>` : ""}</span></div>
+      ${o.card_text ? `<div class="mo-when" style="margin-top:6px">💌 «${esc(o.card_text)}»</div>` : ""}
+      ${note ? `<div class="mo-note">${note}</div>` : ""}
+      <div class="mo-act">
+        ${unpaid && o.pay_url ? `<button class="pay" onclick="tg?.openLink ? tg.openLink('${esc(o.pay_url)}') : open('${esc(o.pay_url)}')">💳 Оплатить</button>` : ""}
+        <button onclick="repeatOrder(${o.id})">🔁 Повторить</button>
+      </div>
+    </article>`;
+  }).join("");
+}
+
+load().then(() => repeatOrder()); loadDeliveryInfo(); loadMyOrders(false);
 </script>
 </body>
 </html>

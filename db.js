@@ -220,6 +220,12 @@ if (db.pragma('user_version', { simple: true }) < 9) {
   db.pragma('user_version = 9');
 }
 
+if (db.pragma('user_version', { simple: true }) < 10) {
+  // v10: ссылка на оплату — чтобы покупатель мог вернуться к оплате из «Мои заказы»
+  db.exec(`ALTER TABLE orders ADD COLUMN pay_url TEXT;`);
+  db.pragma('user_version = 10');
+}
+
 const parseProduct = (p) => p && { ...p, sizes: p.sizes ? JSON.parse(p.sizes) : null };
 const parseOrder = (o) => o && { ...o, items: JSON.parse(o.items) };
 
@@ -323,7 +329,8 @@ module.exports = {
   setPhotoStatus: (id, st) => db.prepare('UPDATE orders SET photo_status = ? WHERE id = ?').run(st, id),
 
   // ── Оплата ──
-  setPayment: (id, paymentId) => db.prepare(`UPDATE orders SET payment_id = ?, payment_status = 'pending' WHERE id = ?`).run(paymentId, id),
+  setPayment: (id, paymentId, url) => db.prepare(`UPDATE orders SET payment_id = ?, payment_status = 'pending', pay_url = ? WHERE id = ?`).run(paymentId, url, id),
+  getUserOrdersAll: (userId) => db.prepare('SELECT * FROM orders WHERE user_id = ? ORDER BY id DESC LIMIT 30').all(userId).map(parseOrder),
   // true — если именно этот вызов отметил оплату (защита от двойных уведомлений)
   markPaid: (id) => db.prepare(`UPDATE orders SET payment_status = 'paid', paid_at = datetime('now')
                                 WHERE id = ? AND payment_status = 'pending'`).run(id).changes === 1,
