@@ -60,13 +60,16 @@ function slotsFor(date) {
 const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
 const mskDay = (plus = 0) => new Date(Date.now() + 3 * 3600e3 + plus * 864e5).toISOString().slice(0, 10);
 const niceDay = (d) => d === mskDay(0) ? 'Сегодня' : d === mskDay(1) ? 'Завтра' : `${+d.slice(8)} ${MONTHS[+d.slice(5, 7) - 1]}`;
-const niceWhen = (o) => `${niceDay(o.delivery_date)}, ${o.delivery_time.replace(/:00/g, '')}`;
+// «18:00–21:00» → «с 18:00 до 21:00»
+const slotText = (t) => { const [a, b] = String(t || '').split(/[–-]/); return b ? `с ${a.trim()} до ${b.trim()}` : String(t || ''); };
+const niceWhen = (o) => `${niceDay(o.delivery_date)} ${slotText(o.delivery_time)}`;
+const shortWhen = (o) => `${niceDay(o.delivery_date)}, ${o.delivery_time.replace(/:00/g, '')}`; // компактно — для витрины
 
 // Текст заказа — спокойный, без лишних эмодзи: что, когда, куда, сколько
 function orderText(o, forOwner = false, withHeader = true) {
   const lines = [];
   if (withHeader) lines.push(`<b>Заказ №${o.id}</b> · ${db.STATUSES[o.status].replace(/^\S+\s/, '')}`);
-  lines.push(`${niceWhen(o)} · ${esc(o.address)}`, '');
+  lines.push(`🕒 ${niceWhen(o)}`, `📍 ${esc(o.address)}`, '');
   for (const i of o.items) lines.push(`${esc(i.name)}${i.qty > 1 || i.unit ? ` × ${i.qty}${i.unit ? ' шт' : ''}` : ''} — ${rub(i.price * i.qty)}`);
   lines.push(o.delivery_fee == null ? 'Доставка — уточним' : `Доставка — ${o.delivery_fee ? rub(o.delivery_fee) : 'бесплатно'}`);
   lines.push(`<b>Итого ${rub(o.total)}</b>`);
@@ -86,7 +89,7 @@ const STEPS = [['new', 'Принят', 'Принят'], ['confirmed', 'Подт�
                ['delivering', 'В пути', 'Доставка'], ['done', 'Доставлен', 'Доставлен']];
 function tracker(status) {
   const cur = STEPS.findIndex(([k]) => k === status);
-  return STEPS.map(([, now, past], i) => i < cur ? `✔︎  ${past}` : i === cur ? `▸  <b>${now}</b>` : `○  <i>${now}</i>`).join('\n');
+  return STEPS.map(([, now, past], i) => i < cur ? `✔︎  ${past}` : i === cur ? `▸  <b>${now}</b>` : `○  ${now}`).join('\n');
 }
 
 // Сообщение покупателю о смене статуса: заголовок, тёплая фраза, трекер, детали
@@ -102,7 +105,8 @@ function statusNote(o) {
   }[o.status];
   const lines = [`<b>${head[0]}</b>`, head[1], ''];
   if (o.status !== 'cancelled') lines.push(tracker(o.status), '');
-  lines.push(`<i>Заказ №${o.id} · ${niceWhen(o)}${o.status === 'delivering' ? ` · ${esc(o.address)}` : ''}</i>`);
+  lines.push(`📦 Заказ №${o.id}`, `🕒 ${niceWhen(o)}`);
+  if (o.status === 'delivering') lines.push(`📍 ${esc(o.address)}`);
   return lines.join('\n');
 }
 
@@ -241,7 +245,7 @@ app.get('/api/my-orders', requireTelegram(BOT_TOKEN), (req, res) => {
   res.json(db.getUserOrdersAll(req.tgUser.id).map((o) => ({
     id: o.id, status: o.status, status_label: db.STATUSES[o.status].replace(/^\S+\s/, ''),
     items: o.items.map(({ id, name, qty, unit, price }) => ({ id, name, qty, unit, price })),
-    total: o.total, delivery_fee: o.delivery_fee, when: niceWhen(o), address: o.address,
+    total: o.total, delivery_fee: o.delivery_fee, when: shortWhen(o), address: o.address,
     card_text: o.card_text, recipient: o.recipient, rating: o.rating,
     payment_status: o.payment_status, pay_url: o.payment_status === 'pending' ? o.pay_url : null,
     photo_status: o.photo_status,
