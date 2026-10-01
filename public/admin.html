@@ -1,0 +1,870 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Флёр — админка</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#fbf7f4; --card:#fff; --text:#2b2227; --muted:#8a7d83; --accent:#c2587a; --accent-soft:#f6e3ea;
+    --line:#efe6e9; --danger:#c0392b; --shadow:0 6px 20px rgba(120,60,80,.08); }
+  @media (prefers-color-scheme: dark){ :root{ --bg:#1b1619; --card:#262024; --text:#f3eaee; --muted:#a8989f;
+    --accent:#e07c9c; --accent-soft:#3a2830; --line:#342a2f; --shadow:0 6px 20px rgba(0,0,0,.3);} }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;padding-bottom:40px}
+  button,input,textarea,select{font:inherit;color:inherit}
+  header{padding:20px 16px 6px;font-family:"Cormorant Garamond",serif;font-size:30px}
+  header span{color:var(--accent)}
+  .tabs{display:flex;gap:8px;padding:10px 16px;position:sticky;top:0;background:var(--bg);z-index:5}
+  .tab{flex:1;min-width:0;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:8px 2px;cursor:pointer;font-weight:500;font-size:11px;position:relative;display:flex;flex-direction:column;align-items:center;gap:2px}
+  .tab i{font-style:normal;font-size:17px}
+  .count{position:absolute;top:-6px;right:-4px;background:var(--danger);color:#fff;border-radius:999px;font-size:11px;min-width:18px;height:18px;line-height:18px;padding:0 5px}
+  .tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+  .filters{display:flex;gap:6px;overflow-x:auto;padding:4px 16px 8px;scrollbar-width:none}
+  .filters::-webkit-scrollbar{display:none}
+  .f{flex:none;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer}
+  .f.active{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+  .list{padding:0 16px}
+  .osearch{width:100%;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 12px;outline:0;margin:4px 0}
+  /* Статистика */
+  .period{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:4px 16px 0}
+  .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px;margin-top:10px}
+  .kpi{background:var(--card);border-radius:16px;padding:12px 14px;box-shadow:var(--shadow)}
+  .kpi .v{font-size:22px;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums}
+  .kpi .l{color:var(--muted);font-size:12.5px}
+  .kpi .s{color:var(--muted);font-size:12px;margin-top:2px}
+  .chart{position:relative;height:150px;display:flex;align-items:flex-end;gap:2px;margin-top:12px;border-bottom:1px solid var(--line)}
+  .bar{flex:1;min-width:0;height:100%;display:flex;align-items:flex-end;cursor:pointer}
+  .bar span{display:block;width:100%;background:var(--accent);border-radius:4px 4px 0 0;min-height:0}
+  .bar.zero span{height:0}
+  .bar:hover span,.bar.sel span{opacity:.75}
+  .axis{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;margin-top:4px}
+  .ymax{position:absolute;top:-2px;left:0;color:var(--muted);font-size:11px;border-top:1px dashed var(--line);width:100%;padding-top:2px}
+  .tip{min-height:20px;font-size:13px;margin-top:6px;text-align:center}
+  .toprow{margin:10px 0}
+  .toprow .t{display:flex;justify-content:space-between;font-size:14px;gap:8px}
+  .toprow .t span:last-child{white-space:nowrap;font-variant-numeric:tabular-nums}
+  .toprow .track{height:6px;background:var(--line);border-radius:4px;margin-top:5px;overflow:hidden}
+  .toprow .fill{height:100%;background:var(--accent);border-radius:4px}
+  .kv{display:flex;justify-content:space-between;font-size:14px;padding:5px 0;border-bottom:1px solid var(--line)}
+  .kv:last-child{border-bottom:0}
+  .kv span:last-child{font-variant-numeric:tabular-nums}
+  .card{background:var(--card);border-radius:16px;padding:14px;margin:10px 0;box-shadow:var(--shadow)}
+  .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .num{font-weight:600}
+  .st{font-size:13px;padding:3px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+  .meta{color:var(--muted);font-size:13px;line-height:1.55;margin-top:6px;white-space:pre-line}
+  .items{font-size:14px;margin-top:8px;line-height:1.5}
+  .sum{font-weight:600;margin-top:4px}
+  .btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .btns button{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:7px 10px;font-size:13px;cursor:pointer}
+  .btns button.cur{border-color:var(--accent);color:var(--accent);font-weight:600}
+  .prod{display:flex;gap:12px;align-items:center}
+  .thumb{width:64px;height:64px;border-radius:12px;overflow:hidden;flex:none;display:grid;place-items:center;font-size:28px}
+  .thumb img{width:100%;height:100%;object-fit:cover}
+  .prod .mid{flex:1;min-width:0}
+  .prod .name{font-weight:600;font-size:15px}
+  .prod .sub{color:var(--muted);font-size:13px;margin-top:2px}
+  .off{opacity:.45}
+  .icon{border:0;background:var(--accent-soft);color:var(--accent);width:38px;height:38px;border-radius:12px;cursor:pointer;font-size:16px}
+  .add{margin:10px 16px;width:calc(100% - 32px);border:2px dashed var(--accent);background:transparent;color:var(--accent);
+    border-radius:16px;padding:14px;font-weight:600;cursor:pointer}
+  .empty{text-align:center;color:var(--muted);padding:40px 0}
+  /* Форма товара */
+  .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:.25s;z-index:10}
+  .sheet{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-radius:24px 24px 0 0;z-index:11;
+    transform:translateY(100%);transition:.3s;max-height:92vh;overflow:auto;padding:18px 16px 26px}
+  .open .sheet-bg{opacity:1;pointer-events:auto} .open .sheet{transform:none}
+  .sheet h2{font-family:"Cormorant Garamond",serif;font-size:26px;margin-bottom:6px}
+  label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+  input[type=text],input[type=number],input[type=url],textarea,select{width:100%;border:1px solid var(--line);background:var(--bg);
+    border-radius:12px;padding:11px 12px;outline:0}
+  input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+  textarea{resize:none;min-height:60px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .preview{margin-top:8px;height:140px;border-radius:14px;overflow:hidden;display:grid;place-items:center;font-size:50px}
+  .preview img{width:100%;height:100%;object-fit:cover}
+  .toggle{display:flex;align-items:center;gap:10px;color:var(--text);font-size:14px;margin-top:12px}
+  .toggle input{width:18px;height:18px;accent-color:var(--accent)}
+  .big{width:100%;border:0;background:var(--accent);color:#fff;font-weight:600;font-size:16px;padding:14px;border-radius:14px;cursor:pointer;margin-top:16px}
+  .del{width:100%;border:0;background:transparent;color:var(--danger);padding:12px;margin-top:6px;cursor:pointer}
+  .error{color:var(--danger);font-size:14px;text-align:center;margin-top:8px;min-height:1em}
+  .tier{display:grid;grid-template-columns:auto 1fr auto 1fr auto;gap:8px;align-items:center;margin-top:10px;font-size:14px;color:var(--muted)}
+  .tier input{padding:9px 10px}
+  .tier .x{border:0;background:transparent;color:var(--danger);font-size:18px;cursor:pointer}
+  /* Чаты */
+  .chat{display:flex;gap:12px;align-items:center;cursor:pointer}
+  .ava{width:44px;height:44px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:600;flex:none}
+  .chat .mid{flex:1;min-width:0}
+  .chat .nm{font-weight:600;font-size:15px;display:flex;justify-content:space-between;gap:8px}
+  .chat .nm small{font-weight:400;color:var(--muted);font-size:12px;white-space:nowrap}
+  .chat .last{color:var(--muted);font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+  .chat.unread .last{color:var(--text);font-weight:500}
+  .dot{background:var(--accent);color:#fff;border-radius:999px;font-size:12px;min-width:22px;height:22px;line-height:22px;text-align:center;padding:0 6px}
+  .thread{position:fixed;inset:0;background:var(--bg);z-index:30;display:flex;flex-direction:column}
+  .thread[hidden]{display:none}
+  .thead{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--card);box-shadow:var(--shadow)}
+  .back{border:0;background:var(--bg);width:38px;height:38px;border-radius:12px;font-size:18px;cursor:pointer}
+  .who .nm{font-weight:600}
+  .who .un{color:var(--muted);font-size:13px}
+  .who .un a{color:var(--accent);text-decoration:none}
+  .torders{display:flex;gap:6px;overflow-x:auto;padding:8px 14px;scrollbar-width:none;flex:none}
+  .torders::-webkit-scrollbar{display:none}
+  .msgs{flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:6px}
+  .bubble{max-width:82%;padding:8px 12px;border-radius:16px;font-size:14.5px;line-height:1.4;white-space:pre-wrap;word-wrap:break-word}
+  .bubble.in{align-self:flex-start;background:var(--card);border-bottom-left-radius:6px;box-shadow:var(--shadow)}
+  .bubble.out{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:6px}
+  .bubble .meta2{font-size:11px;opacity:.65;margin-top:3px;text-align:right}
+  .bubble img{display:block;max-width:100%;border-radius:10px;margin-bottom:4px}
+  .day{align-self:center;color:var(--muted);font-size:12px;margin:8px 0 2px}
+  .composer{background:var(--card);padding:8px 10px 14px;box-shadow:0 -4px 16px rgba(0,0,0,.05)}
+  .quick{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none}
+  .quick::-webkit-scrollbar{display:none}
+  .row2{display:flex;gap:8px;align-items:flex-end}
+  .row2 textarea{flex:1;max-height:120px;min-height:42px}
+  .send{border:0;background:var(--accent);color:#fff;width:44px;height:44px;border-radius:50%;font-size:18px;cursor:pointer;flex:none}
+  .send:disabled{opacity:.5}
+  .upload{display:flex;align-items:center;justify-content:center;border:1px solid var(--accent);color:var(--accent);background:var(--accent-soft);
+    border-radius:12px;padding:10px;font-weight:600;font-size:14px;cursor:pointer;margin-top:8px;color:var(--accent)}
+  .upload.ghost{background:transparent;border-color:var(--line);color:var(--muted);font-weight:400}
+  .more{margin-top:8px;color:var(--muted);font-size:13px} .more input{margin-top:6px}
+  .srow{display:grid;grid-template-columns:56px 1fr 90px 28px;gap:6px;margin-top:8px;align-items:center}
+  .srow input{padding:9px 8px}
+  .srow .x{border:0;background:transparent;color:var(--danger);font-size:18px;cursor:pointer}
+  .chipd{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:5px 10px;margin:6px 6px 0 0;font-size:13px}
+  .chipd button{border:0;background:transparent;color:var(--danger);cursor:pointer}
+  /* Карточка заказа */
+  .ord{background:var(--card);border-radius:18px;padding:14px 14px 12px;margin:10px 0;box-shadow:var(--shadow);border-left:4px solid var(--stc)}
+  .s-new{--stc:#d9668b;--stbg:rgba(217,102,139,.14)}  .s-conf{--stc:#5b8def;--stbg:rgba(91,141,239,.14)}
+  .s-asm{--stc:#a173d6;--stbg:rgba(161,115,214,.15)}  .s-dlv{--stc:#e0a030;--stbg:rgba(224,160,48,.16)}
+  .s-done{--stc:#4caf7d;--stbg:rgba(76,175,125,.15)}  .s-cnl{--stc:#8a7d83;--stbg:rgba(138,125,131,.15)}
+  .s-done,.s-cnl{opacity:.82}
+  .oh{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .when{font-size:17px;font-weight:600;letter-spacing:-.01em}
+  .oid{color:var(--muted);font-size:12.5px;margin-top:1px}
+  .pill{background:var(--stbg);color:var(--stc);font-size:12.5px;font-weight:600;padding:4px 10px;border-radius:999px;white-space:nowrap}
+  .oitems{list-style:none;margin:10px 0 0;padding:0;font-size:14.5px}
+  .oitems li{display:flex;justify-content:space-between;gap:10px;padding:2px 0}
+  .oitems .q{color:var(--muted);white-space:nowrap}
+  .ototal{display:flex;align-items:baseline;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+  .ototal b{font-size:18px}
+  .ototal span{color:var(--muted);font-size:12.5px}
+  .warn{color:var(--danger)!important}
+  .ototal .paid{color:#4caf7d!important;font-weight:600} .ototal .unpaid{color:#e0a030!important;font-weight:600}
+  .oinfo{margin-top:8px;font-size:13.5px;color:var(--text);display:flex;flex-direction:column;gap:3px}
+  .ln{display:flex;gap:8px;line-height:1.4}
+  .ic{width:18px;flex:none;text-align:center;opacity:.8}
+  .mut{color:var(--muted)}
+  .oact{display:flex;gap:8px;margin-top:12px;align-items:center}
+  .primary{flex:1;white-space:nowrap;border:0;background:var(--stc);color:#fff;font-weight:600;font-size:15px;border-radius:12px;padding:11px;cursor:pointer}
+  .done-note{flex:1;color:var(--muted);font-size:13.5px}
+  .iconbtn{width:42px;height:42px;flex:none;display:grid;place-items:center;border-radius:12px;border:1px solid var(--line);
+    background:var(--bg);font-size:17px;text-decoration:none;color:var(--text);cursor:pointer}
+  .bphoto{position:relative;margin-top:10px;border-radius:14px;overflow:hidden;max-height:200px}
+  .bphoto img{display:block;width:100%;max-height:200px;object-fit:cover}
+  .ps{position:absolute;left:8px;bottom:8px;font-size:12.5px;font-weight:600;padding:4px 10px;border-radius:999px;background:rgba(0,0,0,.6);color:#fff}
+  .ps-approved,.ps-auto{background:rgba(76,175,125,.92)} .ps-changes{background:rgba(224,160,48,.95)}
+  .primary.wait{background:transparent;color:var(--stc);border:1px dashed var(--stc)}
+  .more-st{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .more-st button{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:7px 10px;font-size:13px;cursor:pointer}
+  .more-st .danger{color:var(--danger);border-color:rgba(192,57,43,.35)}
+  .fn{margin-left:6px;font-size:11.5px;background:var(--line);border-radius:999px;padding:1px 6px}
+  .f.active .fn{background:var(--accent);color:#fff}
+  /* Статистика: блоки */
+  #statsView .card .num{margin-bottom:12px;font-size:16px}
+  .stack{display:flex;gap:2px;height:12px;border-radius:6px;overflow:hidden;background:var(--line)}
+  .stack span{display:block;height:100%}
+  .stack span:first-child{border-radius:6px 0 0 6px} .stack span:last-child{border-radius:0 6px 6px 0}
+  .legend{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin-top:12px}
+  .legend.one{grid-template-columns:1fr}
+  .lg{display:flex;align-items:center;gap:8px;font-size:13.5px}
+  .lg i{width:10px;height:10px;border-radius:3px;flex:none}
+  .lg b{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:600}
+  .lg small{color:var(--muted);font-size:12px;margin-left:4px;font-weight:400}
+  .minis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .mini{background:var(--bg);border-radius:12px;padding:10px 12px}
+  .mini .v{font-size:20px;font-weight:600}
+  .mini .l{color:var(--muted);font-size:12.5px;margin-top:2px}
+  .denied{text-align:center;padding:80px 24px;color:var(--muted);line-height:1.6}
+  input[type=color]{width:100%;height:44px;border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:4px}
+  /* На ноутбуке — аккуратная колонка по центру, а не на весь экран */
+  @media (min-width:820px){
+    body{padding-left:max(0px,calc(50% - 380px));padding-right:max(0px,calc(50% - 380px))}
+    .sheet{left:50%;right:auto;width:560px;transform:translate(-50%,100%)} .open .sheet{transform:translate(-50%,0)}
+    .thread{left:max(0px,calc(50% - 380px));right:max(0px,calc(50% - 380px))}
+  }
+</style>
+</head>
+<body>
+<header>Флёр<span>.</span> админка</header>
+<div class="tabs">
+  <button class="tab active" data-tab="orders"><i>📦</i>Заказы<span class="count" id="newCount" hidden></span></button>
+  <button class="tab" data-tab="chats"><i>💬</i>Чаты<span class="count" id="chatCount" hidden></span></button>
+  <button class="tab" data-tab="stats"><i>📊</i>Статистика</button>
+  <button class="tab" data-tab="products"><i>💐</i>Букеты</button>
+  <button class="tab" data-tab="delivery"><i>🚚</i>Доставка</button>
+</div>
+<div id="chatsView" hidden>
+  <div class="list" id="chatList"></div>
+</div>
+
+<!-- Открытый диалог с покупателем -->
+<section class="thread" id="thread" hidden>
+  <div class="thead">
+    <button class="back" onclick="closeThread()" aria-label="Назад">←</button>
+    <div class="who"><div class="nm" id="tName"></div><div class="un" id="tUser"></div></div>
+  </div>
+  <div class="torders" id="tOrders"></div>
+  <div class="msgs" id="msgs"></div>
+  <div class="composer">
+    <div class="quick" id="quick"></div>
+    <div class="row2">
+      <textarea id="reply" rows="1" maxlength="3000" placeholder="Сообщение покупателю…"></textarea>
+      <button class="send" id="sendBtn" onclick="sendReply()" aria-label="Отправить">➤</button>
+    </div>
+  </div>
+</section>
+
+<input type="file" id="bouquetFile" accept="image/*" hidden onchange="sendBouquetFile(event)">
+<div id="ordersView">
+  <div class="list"><input type="text" id="orderSearch" class="osearch" placeholder="🔍 Номер, имя, телефон, адрес…"></div>
+  <div class="filters" id="orderFilters"></div>
+  <div class="list" id="orders"></div>
+</div>
+<div id="productsView" hidden>
+  <button class="add" onclick="editProduct(null)">＋ Добавить букет</button>
+  <div class="list" id="products"></div>
+</div>
+
+<div id="statsView" hidden>
+  <div class="period" id="period"></div>
+  <div class="kpis" id="kpis"></div>
+  <div class="list">
+    <div class="card"><div class="num">Выручка по дням</div>
+      <div class="chart" id="chart" role="img"></div><div class="axis" id="axis"></div>
+      <div class="tip" id="tip">Нажмите на столбик, чтобы увидеть день</div></div>
+    <div class="card"><div class="num">Топ товаров</div><div id="top"></div></div>
+    <div class="card"><div class="num">Из чего выручка</div><div id="split"></div></div>
+    <div class="card"><div class="num">Заказы по статусам</div><div id="bystatus"></div></div>
+    <div class="card"><div class="num">Отзывы и открытки</div><div class="minis" id="quality"></div></div>
+  </div>
+</div>
+
+<div id="deliveryView" hidden>
+  <div class="list">
+    <div class="card">
+      <div class="num">Санкт-Петербург</div>
+      <div class="meta">Расстояние по прямой от пл. Восстания</div>
+      <div id="tiers"></div>
+      <div class="btns"><button type="button" onclick="addTier()">＋ Добавить зону</button></div>
+    </div>
+    <div class="card">
+      <div class="num">Ленинградская область</div>
+      <div class="two">
+        <div><label for="r_base">Базовая цена, ₽</label><input type="number" id="r_base" min="0"></div>
+        <div><label for="r_per">За каждый км, ₽</label><input type="number" id="r_per" min="0"></div>
+      </div>
+      <label for="r_from">Считать км начиная с, км</label><input type="number" id="r_from" min="0">
+      <div class="meta" id="r_example"></div>
+    </div>
+    <div class="card">
+      <div class="num">Бесплатная доставка</div>
+      <label for="free_from">От суммы заказа, ₽ (0 — выключено)</label><input type="number" id="free_from" min="0">
+    </div>
+    <div class="error" id="dError"></div>
+    <button class="big" onclick="saveDelivery()">Сохранить тарифы</button>
+
+    <div class="card" style="margin-top:20px">
+      <div class="num">📅 Выходные дни</div>
+      <div class="meta">В эти даты витрина не даст оформить доставку</div>
+      <div class="two"><input type="date" id="c_date"><button type="button" class="upload" style="margin-top:0" onclick="addClosed()">＋ Закрыть дату</button></div>
+      <div id="closedList"></div>
+    </div>
+    <div class="card">
+      <div class="num">⏱ Лимит заказов на интервал</div>
+      <div class="meta">Например, перед 8 Марта поставьте 10 — когда на «12:00–15:00» наберётся 10 заказов, интервал станет «нет мест». 0 — без лимита</div>
+      <input type="number" id="c_limit" min="0" max="99" step="1">
+    </div>
+    <div class="error" id="cError"></div>
+    <button class="big" onclick="saveCalendar()">Сохранить календарь</button>
+
+    <div class="card" style="margin-top:20px">
+      <div class="num">📸 Согласование фото букета</div>
+      <div class="meta">Сколько минут ждать ответа покупателя. На половине срока бот напомнит, а потом считает букет одобренным. 0 — ждать, пока не ответит</div>
+      <input type="number" id="ph_timeout" min="0" max="240" step="5">
+    </div>
+    <button class="big" onclick="savePhotoTimeout()">Сохранить</button>
+  </div>
+</div>
+
+<div id="sheetWrap">
+  <div class="sheet-bg" onclick="closeSheet()"></div>
+  <form class="sheet" id="pForm" onsubmit="saveProduct(event)">
+    <h2 id="pTitle">Новый букет</h2>
+    <label for="p_name">Название</label><input type="text" id="p_name" maxlength="80" required>
+    <label for="p_desc">Мини-описание</label><textarea id="p_desc" maxlength="200" placeholder="Состав, размер, упаковка"></textarea>
+    <div class="two">
+      <div><label for="p_price">Цена, ₽</label><input type="number" id="p_price" min="1" step="1" required></div>
+      <div><label for="p_cat">Категория</label><input type="text" id="p_cat" list="catList" maxlength="40" required></div>
+    </div>
+    <datalist id="catList"></datalist>
+    <label>Фото</label>
+    <div class="preview" id="p_preview">💐</div>
+    <div class="two">
+      <label class="upload">📷 Загрузить фото<input type="file" id="p_file" accept="image/*" hidden></label>
+      <button type="button" class="upload ghost" onclick="$('p_photo').value='';preview()">Убрать фото</button>
+    </div>
+    <details class="more"><summary>или вставить ссылку</summary>
+      <input type="text" id="p_photo" maxlength="500" placeholder="https://…"></details>
+    <div class="two">
+      <div><label for="p_badge">Метка</label>
+        <select id="p_badge"><option value="">— нет —</option><option>Хит</option><option>Новинка</option><option>Скидка</option><option>Сезон</option></select></div>
+      <div><label for="p_bg">Цвет фона</label><input type="color" id="p_bg" value="#f6e3ea"></div>
+    </div>
+    <div class="two">
+      <div><label for="p_qty">Остаток, шт</label><input type="number" id="p_qty" min="0" step="1" placeholder="не считать"></div>
+      <div><label for="p_emoji">Эмодзи без фото</label><input type="text" id="p_emoji" maxlength="8" placeholder="💐"></div>
+    </div>
+    <label class="toggle"><input type="checkbox" id="p_sizes_on"> Есть размеры (S / M / L)</label>
+    <div id="sizesBox" hidden>
+      <div id="sizeRows"></div>
+      <div class="btns"><button type="button" onclick="addSize()">＋ Размер</button></div>
+    </div>
+    <label class="toggle"><input type="checkbox" id="p_unit"> Продаётся поштучно (цена за 1 шт)</label>
+    <div id="minBox" hidden><label for="p_min">Минимум в заказе, шт</label><input type="number" id="p_min" min="1" max="101" step="1" value="1"></div>
+    <label class="toggle"><input type="checkbox" id="p_addon"> Это дополнение — показывать в корзине «Добавить к заказу»</label>
+    <label class="toggle"><input type="checkbox" id="p_stock" checked> Показывать в витрине (в наличии)</label>
+    <div class="error" id="pError"></div>
+    <button class="big" type="submit">Сохранить</button>
+    <button class="del" type="button" id="pDelete" onclick="deleteProduct()">Удалить букет</button>
+  </form>
+</div>
+
+<script>
+const tg = window.Telegram?.WebApp; tg?.ready(); tg?.expand();
+const $ = id => document.getElementById(id);
+const rub = n => Number(n).toLocaleString("ru-RU") + " ₽";
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtDate = d => d.split("-").reverse().join(".");
+
+// Все запросы подписаны данными Telegram — сервер проверит, что это именно владелица
+async function api(path, opts = {}){
+  const res = await fetch("/api/admin" + path, {
+    ...opts,
+    headers: { "Content-Type": "application/json", "X-Init-Data": tg?.initData || "", "ngrok-skip-browser-warning": "1" },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401 || res.status === 403) { denied(data.error); throw new Error(data.error); }
+  if (!res.ok) throw new Error(data.error || "Ошибка сервера");
+  return data;
+}
+function denied(msg){
+  document.body.innerHTML = `<div class="denied">🔒<br>${esc(msg || "Нет доступа")}<br>Откройте админку командой /admin в боте</div>`;
+}
+
+// ─── Вкладки ─────────────────────────────────────────────
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
+  document.querySelectorAll(".tab").forEach(x => x.classList.toggle("active", x === t));
+  $("ordersView").hidden = t.dataset.tab !== "orders";
+  $("productsView").hidden = t.dataset.tab !== "products";
+  $("deliveryView").hidden = t.dataset.tab !== "delivery";
+  $("statsView").hidden = t.dataset.tab !== "stats";
+  $("chatsView").hidden = t.dataset.tab !== "chats";
+  ({ orders: loadOrders, products: loadProducts, delivery: loadDelivery, stats: loadStats, chats: loadChats })[t.dataset.tab]();
+});
+
+// ─── Заказы ──────────────────────────────────────────────
+let orders = [], statuses = {}, orderFilter = "active", orderQuery = "";
+const isoDay = (plus = 0) => new Date(Date.now() + 3 * 3600e3 + plus * 864e5).toISOString().slice(0, 10); // по Москве
+const ACTIVE = ["new", "confirmed", "assembling", "delivering"];
+
+async function loadOrders(){
+  try {
+    const prevNew = orders.filter(o => o.status === "new").length;
+    ({ orders, statuses } = await api("/orders")); renderOrders();
+    const nNew = orders.filter(o => o.status === "new").length;
+    $("newCount").hidden = !nNew; $("newCount").textContent = nNew;
+    if (prevNew && nNew > prevNew) tg?.HapticFeedback?.notificationOccurred("warning"); // пришёл новый заказ
+  }
+  catch (e) { if ($("orders")) $("orders").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+// Следующий шаг заказа — одна главная кнопка вместо шести
+const NEXT = {
+  new:        ["confirmed",  "Подтвердить"],
+  confirmed:  ["assembling", "Начать сборку"],
+  assembling: ["delivering", "В доставку"],
+  delivering: ["done",       "Доставлен"],
+};
+const ST_CLASS = { new: "s-new", confirmed: "s-conf", assembling: "s-asm", delivering: "s-dlv", done: "s-done", cancelled: "s-cnl" };
+const stName = k => (statuses[k] || "").replace(/^\S+\s/, ""); // без эмодзи
+const MONTHS = ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
+const niceDay = d => d === isoDay(0) ? "Сегодня" : d === isoDay(1) ? "Завтра" : d === isoDay(-1) ? "Вчера"
+  : `${+d.slice(8)} ${MONTHS[+d.slice(5, 7) - 1]}`;
+const niceTime = t => t.replace(/:00/g, "");                    // 18:00–21:00 → 18–21
+const km = x => String(x).replace(".", ",");
+let openMore = null;
+
+function renderOrders(){
+  const cnt = {
+    active: orders.filter(o => ACTIVE.includes(o.status) && o.payment_status !== "pending").length,
+    new: orders.filter(o => o.status === "new").length,
+    today: orders.filter(o => o.delivery_date === isoDay(0) && o.status !== "cancelled").length,
+    tomorrow: orders.filter(o => o.delivery_date === isoDay(1) && o.status !== "cancelled").length,
+  };
+  const filters = { active: "В работе", new: "Новые", today: "Сегодня", tomorrow: "Завтра", all: "Все" };
+  $("orderFilters").innerHTML = Object.entries(filters).map(([k, t]) =>
+    `<button class="f ${k === orderFilter ? "active" : ""}" onclick="orderFilter='${k}';renderOrders()">${t}${cnt[k] ? `<span class="fn">${cnt[k]}</span>` : ""}</button>`).join("");
+  const q = orderQuery.toLowerCase().replace(/ё/g, "е"), digits = orderQuery.replace(/\D/g, "");
+  let list = orders.filter(o => {
+    if (orderFilter === "active" && (!ACTIVE.includes(o.status) || o.payment_status === "pending")) return false;
+    if (orderFilter === "new" && o.status !== "new") return false;
+    if (orderFilter === "today" && (o.delivery_date !== isoDay(0) || o.status === "cancelled")) return false;
+    if (orderFilter === "tomorrow" && (o.delivery_date !== isoDay(1) || o.status === "cancelled")) return false;
+    if (!q) return true;
+    const hay = `${o.id} ${o.customer_name} ${o.username || ""} ${o.address} ${o.recipient || ""}`.toLowerCase().replace(/ё/g, "е");
+    return hay.includes(q) || (digits.length >= 3 && o.phone.replace(/\D/g, "").includes(digits)) || String(o.id) === digits;
+  });
+  // Для «сегодня/завтра» удобнее порядок по времени доставки — как маршрут курьера
+  if (orderFilter === "today" || orderFilter === "tomorrow") list = [...list].sort((a, b) => a.delivery_time.localeCompare(b.delivery_time));
+
+  $("orders").innerHTML = list.length ? list.map(o => {
+    const next = NEXT[o.status];
+    const delivery = o.delivery_fee == null ? `<span class="warn">доставку уточнить</span>`
+      : `доставка ${o.delivery_fee ? rub(o.delivery_fee) : "бесплатно"}${o.delivery_km != null ? ` · ${km(o.delivery_km)} км` : ""}`;
+    const extras = [
+      o.recipient && `<div class="ln"><span class="ic">🎁</span>${esc(o.recipient)}</div>`,
+      o.card_text && `<div class="ln"><span class="ic">💌</span><i>«${esc(o.card_text)}»</i></div>`,
+      o.comment && `<div class="ln"><span class="ic">💬</span>${esc(o.comment)}</div>`,
+      o.rating && `<div class="ln"><span class="ic">⭐</span>${o.rating}/5${o.review_text ? ` — ${esc(o.review_text)}` : ""}</div>`,
+    ].filter(Boolean).join("");
+    return `
+    <article class="ord ${ST_CLASS[o.status]}">
+      <div class="oh">
+        <div><div class="when">${niceDay(o.delivery_date)}, ${niceTime(o.delivery_time)}</div><div class="oid">Заказ №${o.id}</div></div>
+        <span class="pill">${esc(stName(o.status))}</span>
+      </div>
+      <ul class="oitems">${o.items.map(i => `<li><span>${esc(i.name)}</span><span class="q">× ${i.qty}${i.unit ? " шт" : ""}</span></li>`).join("")}</ul>
+      <div class="ototal"><b>${rub(o.total)}</b>${o.payment_status === "paid" ? `<span class="paid">💳 оплачен</span>` : o.payment_status === "pending" ? `<span class="unpaid">ждёт оплаты</span>` : ""}<span>${delivery}</span></div>
+      <div class="oinfo">
+        <div class="ln"><span class="ic">👤</span>${esc(o.customer_name)}${o.username ? ` <span class="mut">@${esc(o.username)}</span>` : ""}</div>
+        <div class="ln"><span class="ic">📍</span>${esc(o.address)}</div>
+        ${extras}
+      </div>
+      ${o.bouquet_photo ? `<div class="bphoto"><img data-photo="${esc(o.bouquet_photo)}" alt="Фото букета">
+        <span class="ps ps-${o.photo_status}">${{ pending: "⏳ Ждём ответа покупателя", approved: "👍 Покупатель одобрил", changes: "✏️ Просят изменить", auto: "⏰ Не ответил — одобрено автоматически" }[o.photo_status] || ""}</span></div>` : ""}
+      <div class="oact">
+        ${primaryBtn(o, next)}
+        <a class="iconbtn" href="tel:${esc(o.phone.replace(/[^\d+]/g, ""))}" aria-label="Позвонить">📞</a>
+        <button class="iconbtn" onclick="chatWith(${o.id})" aria-label="Написать">💬</button>
+        <button class="iconbtn" onclick="openMore = openMore === ${o.id} ? null : ${o.id}; renderOrders()" aria-label="Ещё">⋯</button>
+      </div>
+      ${openMore === o.id ? `<div class="more-st">
+        ${["confirmed", "assembling"].includes(o.status) || o.bouquet_photo ? `<button onclick="pickBouquetPhoto(${o.id})">📸 ${o.bouquet_photo ? "Новое фото" : "Фото на согласование"}</button>` : ""}
+        ${Object.keys(statuses).filter(k => k !== o.status && k !== "cancelled").map(k => `<button onclick="setStatus(${o.id},'${k}')">${esc(stName(k))}</button>`).join("")}
+        ${o.status !== "cancelled" ? `<button class="danger" onclick="cancelOrder(${o.id})">Отменить заказ</button>` : ""}
+      </div>` : ""}
+    </article>`;
+  }).join("") : `<div class="empty">Здесь пока пусто 🌿</div>`;
+  $("orders").querySelectorAll("img[data-photo]").forEach(loadPhoto);
+}
+// Главная кнопка. На этапе сборки — сначала фото на согласование, потом «В доставку»
+function primaryBtn(o, next){
+  if (o.payment_status === "pending") return `<span class="done-note">⏳ Ждём оплату — заказ появится «В работе» после оплаты</span>`;
+  if (!next) return `<span class="done-note">${o.status === "done" ? "Заказ выполнен" : "Заказ отменён"}</span>`;
+  if (o.status === "assembling") {
+    if (!o.photo_status || o.photo_status === "changes")
+      return `<button class="primary" onclick="pickBouquetPhoto(${o.id})">📸 ${o.photo_status === "changes" ? "Новое фото" : "Фото на согласование"}</button>`;
+    if (o.photo_status === "pending")
+      return `<button class="primary wait" onclick="sendWithoutOk(${o.id})">⏳ Ждём ответа</button>`;
+  }
+  return `<button class="primary" onclick="setStatus(${o.id},'${next[0]}')">${next[1]}</button>`;
+}
+function sendWithoutOk(id){
+  const q = "Покупатель ещё не ответил на фото. Передать букет курьеру без одобрения?";
+  const doIt = ok => ok && setStatus(id, "delivering");
+  tg?.showConfirm ? tg.showConfirm(q, doIt) : doIt(confirm(q));
+}
+// Фото букета с телефона → покупателю
+let photoFor = null;
+function pickBouquetPhoto(id){ photoFor = id; $("bouquetFile").click(); }
+async function sendBouquetFile(e){
+  const file = e.target.files[0]; e.target.value = ""; if (!file || !photoFor) return;
+  const id = photoFor; photoFor = null;
+  try {
+    const img = await new Promise((ok, fail) => { const i = new Image(); i.onload = () => ok(i); i.onerror = fail; i.src = URL.createObjectURL(file); });
+    const updated = await api(`/orders/${id}/photo`, { method: "POST", body: JSON.stringify({ full: resize(img, 1600, 0.85) }) });
+    orders = orders.map(o => o.id === id ? updated : o); openMore = null; renderOrders();
+    tg?.HapticFeedback?.notificationOccurred("success");
+    tg ? tg.showAlert("Фото отправлено покупателю 📸 Как только он ответит — придёт уведомление") : null;
+  } catch (ex) { tg ? tg.showAlert(ex.message || "Не получилось отправить фото") : alert(ex.message); }
+}
+
+function cancelOrder(id){
+  const q = `Отменить заказ №${id}? Покупатель получит уведомление, цветы вернутся на склад.`;
+  const doIt = ok => ok && setStatus(id, "cancelled");
+  tg?.showConfirm ? tg.showConfirm(q, doIt) : doIt(confirm(q));
+}
+// Написать покупателю — прямо в «Чатах» админки
+function chatWith(orderId){
+  const o = orders.find(x => x.id === orderId);
+  if (!chats.some(c => c.user_id === o.user_id)) chats.unshift({ user_id: o.user_id, name: o.customer_name, username: o.username, text: "", created_at: new Date().toISOString().replace("T", " ").slice(0, 19), unread: 0 });
+  openThread(o.user_id).then(() => { replyOrder = orderId; refreshThread(); });
+}
+$("orderSearch").oninput = e => { orderQuery = e.target.value.trim(); if (orderQuery) orderFilter = "all"; renderOrders(); };
+// Автообновление заказов раз в 30 секунд, пока открыта вкладка «Заказы»
+setInterval(() => { if (!$("ordersView").hidden && !document.hidden) loadOrders(); }, 30000);
+
+async function setStatus(id, status){
+  try {
+    const updated = await api(`/orders/${id}/status`, { method: "POST", body: JSON.stringify({ status }) });
+    orders = orders.map(o => o.id === id ? updated : o); openMore = null;
+    tg?.HapticFeedback?.notificationOccurred("success");
+    renderOrders();
+  } catch (e) { tg ? tg.showAlert(e.message) : alert(e.message); }
+}
+
+// ─── Букеты ──────────────────────────────────────────────
+let products = [], editing = null;
+async function loadProducts(){
+  try { products = await api("/products"); renderProducts(); }
+  catch (e) { if ($("products")) $("products").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+function renderProducts(){
+  $("catList").innerHTML = [...new Set(products.map(p => p.category))].map(c => `<option value="${esc(c)}">`).join("");
+  $("products").innerHTML = products.map(p => `
+    <div class="card prod ${p.in_stock ? "" : "off"}">
+      <div class="thumb" style="background:${esc(p.bg)}">${p.photo_url ? `<img src="${esc(p.photo_url)}" alt="">` : esc(p.emoji || "💐")}</div>
+      <div class="mid"><div class="name">${esc(p.name)}</div>
+        <div class="sub">${p.addon ? "🎁 доп · " : esc(p.category) + " · "}${p.sizes ? p.sizes.map(s => esc(s.name)).join("/") + " от " : ""}${rub(p.price)}${p.unit ? "/шт" : ""}${p.badge ? " · " + esc(p.badge) : ""}${p.in_stock ? "" : " · скрыт"}</div>
+        ${p.stock != null ? `<div class="sub" style="color:${p.stock <= (p.unit ? 20 : 2) ? "var(--danger)" : "var(--muted)"}">📦 остаток: ${p.stock} шт</div>` : ""}</div>
+      <button class="icon" onclick="toggleStock(${p.id})" title="Показать/скрыть">${p.in_stock ? "👁" : "🚫"}</button>
+      <button class="icon" onclick="editProduct(${p.id})" title="Изменить">✏️</button>
+    </div>`).join("") || `<div class="empty">Букетов пока нет</div>`;
+}
+function editProduct(id){
+  editing = id ? products.find(p => p.id === id) : null;
+  const p = editing || { name: "", description: "", price: "", category: "", photo_url: "", badge: "", bg: "#f6e3ea", in_stock: 1, unit: null, min_qty: 1, stock: null, addon: 0, emoji: "", sizes: null };
+  $("pTitle").textContent = editing ? "Изменить букет" : "Новый букет";
+  $("p_name").value = p.name; $("p_desc").value = p.description; $("p_price").value = p.price;
+  $("p_cat").value = p.category; $("p_photo").value = p.photo_url || ""; $("p_badge").value = p.badge || "";
+  $("p_bg").value = p.bg || "#f6e3ea"; $("p_stock").checked = !!p.in_stock;
+  $("p_unit").checked = !!p.unit; $("p_min").value = p.min_qty || 1; $("minBox").hidden = !p.unit;
+  $("p_qty").value = p.stock ?? ""; $("p_emoji").value = p.emoji || ""; $("p_addon").checked = !!p.addon;
+  sizes = p.sizes ? p.sizes.map(x => ({ ...x })) : []; $("p_sizes_on").checked = sizes.length > 0;
+  $("sizesBox").hidden = !sizes.length; $("p_price").disabled = sizes.length > 0; renderSizes();
+  $("pDelete").hidden = !editing; $("pError").textContent = "";
+  preview(); $("sheetWrap").classList.add("open");
+}
+function closeSheet(){ $("sheetWrap").classList.remove("open"); }
+function preview(){
+  const url = $("p_photo").value.trim();
+  $("p_preview").style.background = $("p_bg").value;
+  $("p_preview").innerHTML = /^(https:\/\/|\/uploads\/)/.test(url) ? `<img src="${esc(url)}" alt="" onerror="this.replaceWith('⚠️ фото не открывается')">` : esc($("p_emoji").value || "💐");
+}
+$("p_emoji").oninput = preview;
+
+// ─── Загрузка фото с телефона: сжимаем прямо здесь, на сервер уходит лёгкий JPEG ───
+function resize(img, max, quality){
+  const k = Math.min(1, max / Math.max(img.width, img.height));
+  const c = document.createElement("canvas");
+  c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+  c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+  return c.toDataURL("image/jpeg", quality);
+}
+$("p_file").onchange = async e => {
+  const file = e.target.files[0]; if (!file) return;
+  $("p_preview").innerHTML = "⏳"; $("pError").textContent = "";
+  try {
+    const img = await new Promise((ok, fail) => { const i = new Image(); i.onload = () => ok(i); i.onerror = fail; i.src = URL.createObjectURL(file); });
+    const d = await api("/upload", { method: "POST", body: JSON.stringify({ full: resize(img, 1400, 0.85), thumb: resize(img, 600, 0.8) }) });
+    $("p_photo").value = d.url; preview();
+    tg?.HapticFeedback?.notificationOccurred("success");
+  } catch (ex) { $("pError").textContent = ex.message || "Не получилось загрузить фото"; preview(); }
+  e.target.value = "";
+};
+
+// ─── Размеры S / M / L ───
+let sizes = [];
+function renderSizes(){
+  $("sizeRows").innerHTML = sizes.map((x, i) => `
+    <div class="srow"><input type="text" value="${esc(x.name)}" placeholder="M" maxlength="12" oninput="sizes[${i}].name=this.value">
+      <input type="text" value="${esc(x.note || "")}" placeholder="напр. 7 цветов, ~35 см" maxlength="40" oninput="sizes[${i}].note=this.value">
+      <input type="number" value="${x.price || ""}" placeholder="₽" min="1" oninput="sizes[${i}].price=+this.value">
+      <button type="button" class="x" onclick="sizes.splice(${i},1);renderSizes()" aria-label="Удалить">✕</button></div>`).join("");
+}
+function addSize(){ const names = ["S", "M", "L", "XL", "XXL"]; sizes.push({ name: names[sizes.length] || "", note: "", price: 0 }); renderSizes(); }
+$("p_sizes_on").onchange = e => {
+  $("sizesBox").hidden = !e.target.checked; $("p_price").disabled = e.target.checked;
+  if (e.target.checked && !sizes.length) { const b = +$("p_price").value || 0;
+    sizes = [{ name: "S", note: "", price: Math.round(b * 0.75) }, { name: "M", note: "", price: b }, { name: "L", note: "", price: Math.round(b * 1.4) }]; }
+  renderSizes();
+};
+$("p_photo").oninput = preview; $("p_bg").oninput = preview;
+
+const formData = () => ({
+  name: $("p_name").value, description: $("p_desc").value, price: $("p_price").value,
+  category: $("p_cat").value, photo_url: $("p_photo").value, badge: $("p_badge").value,
+  bg: $("p_bg").value, in_stock: $("p_stock").checked,
+  unit: $("p_unit").checked, min_qty: $("p_min").value,
+  stock: $("p_qty").value, emoji: $("p_emoji").value, addon: $("p_addon").checked,
+  sizes: $("p_sizes_on").checked ? sizes : [],
+  ...($("p_sizes_on").checked && sizes.length ? { price: Math.min(...sizes.map(x => x.price || Infinity)) } : {}),
+});
+$("p_unit").onchange = e => $("minBox").hidden = !e.target.checked;
+async function saveProduct(e){
+  e.preventDefault(); $("pError").textContent = "";
+  try {
+    if (editing) await api(`/products/${editing.id}`, { method: "PUT", body: JSON.stringify(formData()) });
+    else await api("/products", { method: "POST", body: JSON.stringify(formData()) });
+    tg?.HapticFeedback?.notificationOccurred("success");
+    closeSheet(); loadProducts();
+  } catch (ex) { $("pError").textContent = ex.message; }
+}
+async function toggleStock(id){
+  const p = products.find(x => x.id === id);
+  try { await api(`/products/${id}`, { method: "PUT", body: JSON.stringify({ ...p, in_stock: !p.in_stock }) }); loadProducts(); }
+  catch (e) { tg ? tg.showAlert(e.message) : alert(e.message); }
+}
+function deleteProduct(){
+  const doIt = async ok => {
+    if (!ok) return;
+    try { await api(`/products/${editing.id}`, { method: "DELETE" }); closeSheet(); loadProducts(); }
+    catch (e) { $("pError").textContent = e.message; }
+  };
+  const q = `Удалить «${editing.name}» навсегда? Если букет временно закончился, лучше просто скрыть его 👁`;
+  tg?.showConfirm ? tg.showConfirm(q, doIt) : doIt(confirm(q));
+}
+
+// ─── Статистика ──────────────────────────────────────────
+let statDays = 30, stats = null;
+const plural = (n, [one, few, many]) => { const m10 = n % 10, m100 = n % 100;
+  return m10 === 1 && m100 !== 11 ? one : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? few : many; };
+async function loadStats(){
+  $("period").innerHTML = [7, 30, 90].map(d =>
+    `<button class="f ${d === statDays ? "active" : ""}" onclick="statDays=${d};loadStats()">${d} дней</button>`).join("");
+  try { stats = await api(`/stats?days=${statDays}`); renderStats(); }
+  catch (e) { $("kpis").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+function renderStats(){
+  const s = stats;
+  $("kpis").innerHTML = [
+    ["Выручка", rub(s.revenue), `товары ${rub(s.goods)}`],
+    ["Заказов", s.orders, s.cancelled ? `ещё ${s.cancelled} отменено` : "без отмен 🎉"],
+    ["Средний чек", rub(s.avg), ""],
+    ["Покупателей", s.customers, s.repeat ? `${s.repeat} ${plural(s.repeat, ["вернулся", "вернулись", "вернулись"])} снова` : ""],
+  ].map(([l, v, sub]) => `<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${sub}</div></div>`).join("");
+
+  // Столбики выручки по дням (один цвет — одна величина)
+  const max = Math.max(...s.byDay.map(d => d.revenue), 1);
+  $("chart").setAttribute("aria-label", `Выручка по дням за ${s.days} дней, максимум ${rub(max)}`);
+  $("chart").innerHTML = `<div class="ymax">${rub(max)}</div>` + s.byDay.map((d, i) =>
+    `<div class="bar ${d.revenue ? "" : "zero"}" data-i="${i}" title="${fmtDate(d.date)}: ${rub(d.revenue)}">
+       <span style="height:${Math.max(d.revenue ? 2 : 0, d.revenue / max * 100)}%"></span></div>`).join("");
+  const first = s.byDay[0].date, mid = s.byDay[Math.floor(s.byDay.length / 2)].date, last = s.byDay.at(-1).date;
+  $("axis").innerHTML = [first, mid, last].map(d => `<span>${fmtDate(d).slice(0, 5)}</span>`).join("");
+  $("chart").querySelectorAll(".bar").forEach(b => b.onclick = b.onmouseenter = () => {
+    const d = s.byDay[b.dataset.i];
+    $("chart").querySelectorAll(".bar").forEach(x => x.classList.toggle("sel", x === b));
+    $("tip").innerHTML = `<b>${fmtDate(d.date)}</b> · ${rub(d.revenue)} · ${d.orders} ${plural(d.orders, ["заказ", "заказа", "заказов"])}`;
+  });
+
+  const topMax = Math.max(...s.top.map(t => t.revenue), 1);
+  $("top").innerHTML = s.top.length ? s.top.map((t, i) => `
+    <div class="toprow"><div class="t"><span>${i + 1}. ${esc(t.name)} <span style="color:var(--muted)">× ${t.qty}${t.unit ? " шт" : ""}</span></span><span>${rub(t.revenue)}</span></div>
+    <div class="track"><div class="fill" style="width:${t.revenue / topMax * 100}%"></div></div></div>`).join("")
+    : `<div class="empty">Пока нет продаж за этот период</div>`;
+
+  // Из чего выручка: одна полоса «товары / доставка» + подписи с процентами
+  const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
+  const parts = [["Товары", s.goods, "var(--accent)"], ["Доставка", s.delivery, "#8fa8d8"]];
+  $("split").innerHTML = s.revenue ? `
+    <div class="stack" role="img" aria-label="Товары ${pct(s.goods, s.revenue)}%, доставка ${pct(s.delivery, s.revenue)}%">
+      ${parts.filter(p => p[1]).map(([, v, c]) => `<span style="width:${v / s.revenue * 100}%;background:${c}"></span>`).join("")}</div>
+    <div class="legend one">${parts.map(([t, v, c]) =>
+      `<div class="lg"><i style="background:${c}"></i>${t}<b>${rub(v)}<small>${pct(v, s.revenue)}%</small></b></div>`).join("")}</div>`
+    : `<div class="empty">Пока нет продаж за этот период</div>`;
+
+  // Статусы: та же цветовая схема, что и у карточек заказов
+  const ST_COLORS = { new: "#d9668b", confirmed: "#5b8def", assembling: "#a173d6", delivering: "#e0a030", done: "#4caf7d", cancelled: "#8a7d83" };
+  const total = Object.values(s.byStatus).reduce((a, b) => a + b, 0);
+  const present = Object.keys(s.statuses).filter(k => s.byStatus[k]);
+  const label = k => s.statuses[k].replace(/^\S+\s/, "");
+  $("bystatus").innerHTML = total ? `
+    <div class="stack" role="img" aria-label="${present.map(k => `${label(k)}: ${s.byStatus[k]}`).join(", ")}">
+      ${present.map(k => `<span title="${esc(label(k))}: ${s.byStatus[k]}" style="width:${s.byStatus[k] / total * 100}%;background:${ST_COLORS[k]}"></span>`).join("")}</div>
+    <div class="legend">${present.map(k =>
+      `<div class="lg"><i style="background:${ST_COLORS[k]}"></i>${esc(label(k))}<b>${s.byStatus[k]}</b></div>`).join("")}</div>`
+    : `<div class="empty">Заказов нет</div>`;
+
+  // Отзывы и открытки — отдельно от денег
+  $("quality").innerHTML = `
+    <div class="mini"><div class="v">${s.rating ? `${String(s.rating).replace(".", ",")} <span style="font-size:14px">/ 5</span>` : "—"}</div>
+      <div class="l">${s.rated ? `средняя оценка · ${s.rated} ${plural(s.rated, ["отзыв", "отзыва", "отзывов"])}` : "отзывов пока нет"}</div></div>
+    <div class="mini"><div class="v">${s.cards}</div>
+      <div class="l">${plural(s.cards, ["заказ", "заказа", "заказов"])} с открыткой${s.orders ? ` · ${pct(s.cards, s.orders)}%` : ""}</div></div>`;
+}
+
+// ─── Доставка ────────────────────────────────────────────
+let tiers = [];
+async function loadDelivery(){
+  loadCalendar();
+  try {
+    const t = await api("/delivery");
+    tiers = t.city.map(r => ({ ...r }));
+    $("r_base").value = t.region.base; $("r_per").value = t.region.perKm; $("r_from").value = t.region.fromKm;
+    $("free_from").value = t.freeFrom; renderTiers(); regionExample();
+  } catch (e) { $("dError").textContent = e.message; }
+}
+function renderTiers(){
+  $("tiers").innerHTML = tiers.map((r, i) => `
+    <div class="tier">до <input type="number" min="1" value="${r.km}" oninput="tiers[${i}].km=+this.value"> км —
+      <input type="number" min="0" value="${r.price}" oninput="tiers[${i}].price=+this.value"> ₽
+      <button class="x" type="button" onclick="tiers.splice(${i},1);renderTiers()" aria-label="Удалить">✕</button></div>`).join("");
+}
+function addTier(){ const last = tiers[tiers.length - 1]; tiers.push({ km: (last?.km || 0) + 5, price: (last?.price || 0) + 100 }); renderTiers(); }
+function regionExample(){
+  const b = +$("r_base").value || 0, p = +$("r_per").value || 0, f = +$("r_from").value || 0;
+  $("r_example").textContent = `Пример: 35 км от магазина → ${rub(b + Math.max(0, 35 - f) * p)}`;
+}
+["r_base", "r_per", "r_from"].forEach(id => $(id).oninput = regionExample);
+// ─── Календарь ───
+let closedDates = [];
+async function loadPhotoTimeout(){ try { $("ph_timeout").value = (await api("/photo-timeout")).minutes; } catch {} }
+async function savePhotoTimeout(){
+  try {
+    const d = await api("/photo-timeout", { method: "PUT", body: JSON.stringify({ minutes: $("ph_timeout").value }) });
+    $("ph_timeout").value = d.minutes; tg?.HapticFeedback?.notificationOccurred("success");
+    tg ? tg.showAlert(d.minutes ? `Ждём ответа ${d.minutes} мин, потом отправляем как на фото 📸` : "Будем ждать ответа покупателя без ограничения") : null;
+  } catch (e) { tg ? tg.showAlert(e.message) : alert(e.message); }
+}
+async function loadCalendar(){
+  loadPhotoTimeout();
+  try { const c = await api("/calendar"); closedDates = c.closed; $("c_limit").value = c.slotLimit; renderClosed(); } catch {}
+}
+function renderClosed(){
+  const today = new Date().toISOString().slice(0, 10);
+  $("closedList").innerHTML = closedDates.filter(d => d >= today).map(d =>
+    `<span class="chipd">${fmtDate(d)}<button type="button" onclick="closedDates=closedDates.filter(x=>x!=='${d}');renderClosed()" aria-label="Открыть дату">✕</button></span>`).join("")
+    || `<div class="meta">Выходных нет — работаем каждый день</div>`;
+}
+function addClosed(){ const d = $("c_date").value; if (d && !closedDates.includes(d)) { closedDates.push(d); closedDates.sort(); renderClosed(); } }
+async function saveCalendar(){
+  $("cError").textContent = "";
+  try {
+    const c = await api("/calendar", { method: "PUT", body: JSON.stringify({ closed: closedDates, slotLimit: $("c_limit").value }) });
+    closedDates = c.closed; renderClosed();
+    tg?.HapticFeedback?.notificationOccurred("success"); tg ? tg.showAlert("Календарь сохранён 📅") : alert("Сохранено");
+  } catch (e) { $("cError").textContent = e.message; }
+}
+
+async function saveDelivery(){
+  $("dError").textContent = "";
+  try {
+    const t = await api("/delivery", { method: "PUT", body: JSON.stringify({
+      city: tiers, region: { base: $("r_base").value, perKm: $("r_per").value, fromKm: $("r_from").value }, freeFrom: $("free_from").value,
+    }) });
+    tiers = t.city; renderTiers();
+    tg?.HapticFeedback?.notificationOccurred("success");
+    tg ? tg.showAlert("Тарифы сохранены 🚚") : alert("Сохранено");
+  } catch (e) { $("dError").textContent = e.message; }
+}
+
+// ─── Чаты с покупателями ─────────────────────────────────
+let chats = [], openUser = null, replyOrder = null, threadTimer = null;
+const QUICK = ["Здравствуйте! 🌷", "Да, всё получится!", "Ваш букет уже собираем 💐", "Курьер выехал 🚚", "Спасибо за заказ! ❤️"];
+const timeOf = s => new Date(s.replace(" ", "T") + "Z").toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+const dayOf = s => new Date(s.replace(" ", "T") + "Z").toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+
+async function loadChats(){
+  try {
+    const d = await api("/chats"); chats = d.chats;
+    $("chatCount").hidden = !d.unread; $("chatCount").textContent = d.unread;
+    if (!$("chatsView").hidden) renderChats();
+  } catch {}
+}
+function renderChats(){
+  $("chatList").innerHTML = chats.length ? chats.map(c => `
+    <div class="card chat ${c.unread ? "unread" : ""}" onclick="openThread(${c.user_id})">
+      <div class="ava">${esc((c.name || "?")[0].toUpperCase())}</div>
+      <div class="mid"><div class="nm"><span>${esc(c.name || "Покупатель")}</span><small>${dayOf(c.created_at) === dayOf(new Date().toISOString().replace("T", " ").slice(0, 19)) ? timeOf(c.created_at) : dayOf(c.created_at)}</small></div>
+        <div class="last">${c.direction === "out" ? "Вы: " : ""}${c.photo ? "📷 Фото " : ""}${esc(c.text || "")}</div></div>
+      ${c.unread ? `<span class="dot">${c.unread}</span>` : ""}
+    </div>`).join("") : `<div class="empty">Сообщений пока нет 🌿<br>Когда покупатель напишет боту, диалог появится здесь</div>`;
+}
+
+async function openThread(userId){
+  openUser = userId; replyOrder = null;
+  const c = chats.find(x => x.user_id === userId) || {};
+  $("tName").textContent = c.name || "Покупатель";
+  $("tUser").innerHTML = c.username ? `<a href="#" onclick="tg ? tg.openTelegramLink('https://t.me/${esc(c.username)}') : open('https://t.me/${esc(c.username)}');return false">@${esc(c.username)}</a>` : "";
+  $("quick").innerHTML = QUICK.map(q => `<button class="f" onclick="$('reply').value=this.textContent;$('reply').focus()">${esc(q)}</button>`).join("");
+  $("thread").hidden = false; tg?.BackButton?.show();
+  await refreshThread(true);
+  clearInterval(threadTimer);
+  threadTimer = setInterval(() => !document.hidden && refreshThread(), 8000); // новые сообщения подтягиваются сами
+}
+function closeThread(){
+  $("thread").hidden = true; openUser = null; clearInterval(threadTimer); tg?.BackButton?.hide(); loadChats();
+}
+tg?.BackButton?.onClick(() => { if (!$("thread").hidden) closeThread(); });
+
+async function refreshThread(scroll){
+  if (!openUser) return;
+  try {
+    const d = await api(`/chats/${openUser}`);
+    renderThread(d.messages, scroll);
+    $("tOrders").innerHTML = d.orders.map(o =>
+      `<button class="f ${replyOrder === o.id ? "active" : ""}" onclick="replyOrder = replyOrder === ${o.id} ? null : ${o.id}; refreshThread()">№${o.id} · ${esc(o.status)}</button>`).join("");
+    loadChats();
+  } catch (e) { $("msgs").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+let lastCount = 0;
+function renderThread(list, scroll){
+  const box = $("msgs"), atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+  let prevDay = "";
+  box.innerHTML = list.map(m => {
+    const day = dayOf(m.created_at), sep = day !== prevDay ? `<div class="day">${day}</div>` : ""; prevDay = day;
+    return `${sep}<div class="bubble ${m.direction}">${m.photo ? `<img data-photo="${esc(m.photo)}" alt="Фото">` : ""}${esc(m.text || "")}<div class="meta2">${m.order_id ? `№${m.order_id} · ` : ""}${timeOf(m.created_at)}</div></div>`;
+  }).join("") || `<div class="empty">Нет сообщений</div>`;
+  box.querySelectorAll("img[data-photo]").forEach(loadPhoto);
+  if (scroll || atBottom || list.length > lastCount) box.scrollTop = box.scrollHeight;
+  lastCount = list.length;
+}
+// Фото грузим через сервер с подписью Telegram (просто <img src> не пройдёт проверку)
+const photoCache = {};
+async function loadPhoto(img){
+  const id = img.dataset.photo;
+  try {
+    photoCache[id] ||= await fetch(`/api/admin/photo/${encodeURIComponent(id)}`, { headers: { "X-Init-Data": tg?.initData || "", "ngrok-skip-browser-warning": "1" } })
+      .then(r => r.ok ? r.blob() : Promise.reject()).then(b => URL.createObjectURL(b));
+    img.src = photoCache[id];
+  } catch { img.replaceWith("📷 фото"); }
+}
+async function sendReply(){
+  const text = $("reply").value.trim(); if (!text || !openUser) return;
+  $("sendBtn").disabled = true;
+  try {
+    const d = await api(`/chats/${openUser}`, { method: "POST", body: JSON.stringify({ text, orderId: replyOrder }) });
+    $("reply").value = ""; $("reply").style.height = ""; renderThread(d.messages, true);
+    tg?.HapticFeedback?.notificationOccurred("success");
+  } catch (e) { tg ? tg.showAlert(e.message) : alert(e.message); }
+  finally { $("sendBtn").disabled = false; }
+}
+$("reply").oninput = e => { e.target.style.height = "auto"; e.target.style.height = Math.min(120, e.target.scrollHeight) + "px"; };
+$("reply").onkeydown = e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) sendReply(); }; // Cmd+Enter на компьютере
+
+// Счётчик непрочитанных обновляется сам, на любой вкладке
+setInterval(() => !document.hidden && loadChats(), 15000);
+
+if (!tg?.initData) denied("Админка открывается только из Telegram");
+else {
+  const chatParam = new URLSearchParams(location.search).get("chat");
+  if (chatParam) { // открыли из уведомления «📬 Открыть чат»
+    document.querySelector('.tab[data-tab="chats"]').click();
+    loadChats().then(() => openThread(Number(chatParam)));
+  } else { loadOrders(); loadChats(); }
+}
+</script>
+</body>
+</html>
