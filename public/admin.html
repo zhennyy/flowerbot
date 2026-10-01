@@ -156,8 +156,8 @@
   .ln{display:flex;gap:8px;line-height:1.4}
   .ic{width:18px;flex:none;text-align:center;opacity:.8}
   .mut{color:var(--muted)}
-  .oact{display:flex;gap:8px;margin-top:12px;align-items:center}
-  .primary{flex:1;white-space:nowrap;border:0;background:var(--stc);color:#fff;font-weight:600;font-size:15px;border-radius:12px;padding:11px;cursor:pointer}
+  .oact{display:flex;gap:6px;margin-top:12px;align-items:center}
+  .primary{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0;background:var(--stc);color:#fff;font-weight:600;font-size:15px;border-radius:12px;padding:11px;cursor:pointer}
   .done-note{flex:1;color:var(--muted);font-size:13.5px}
   .iconbtn{width:42px;height:42px;flex:none;display:grid;place-items:center;border-radius:12px;border:1px solid var(--line);
     background:var(--bg);font-size:17px;text-decoration:none;color:var(--text);cursor:pointer}
@@ -457,10 +457,11 @@ function renderOrders(){
         ${primaryBtn(o, next)}
         <a class="iconbtn" href="tel:${esc(o.phone.replace(/[^\d+]/g, ""))}" aria-label="Позвонить">📞</a>
         <button class="iconbtn" onclick="chatWith(${o.id})" aria-label="Написать">💬</button>
+        ${["confirmed", "assembling"].includes(o.status) && o.photo_status !== "changes" ? `<button class="iconbtn" onclick="pickBouquetPhoto(${o.id})" aria-label="Фото на согласование" title="Фото на согласование">📸</button>` : ""}
         <button class="iconbtn" onclick="openMore = openMore === ${o.id} ? null : ${o.id}; renderOrders()" aria-label="Ещё">⋯</button>
       </div>
       ${openMore === o.id ? `<div class="more-st">
-        ${["confirmed", "assembling"].includes(o.status) || o.bouquet_photo ? `<button onclick="pickBouquetPhoto(${o.id})">📸 ${o.bouquet_photo ? "Новое фото" : "Фото на согласование"}</button>` : ""}
+        ${!["confirmed", "assembling"].includes(o.status) && o.bouquet_photo ? `<button onclick="pickBouquetPhoto(${o.id})">📸 Новое фото</button>` : ""}
         ${Object.keys(statuses).filter(k => k !== o.status && k !== "cancelled").map(k => `<button onclick="setStatus(${o.id},'${k}')">${esc(stName(k))}</button>`).join("")}
         ${o.status !== "cancelled" ? `<button class="danger" onclick="cancelOrder(${o.id})">Отменить заказ</button>` : ""}
       </div>` : ""}
@@ -473,8 +474,10 @@ function primaryBtn(o, next){
   if (o.payment_status === "pending") return `<span class="done-note">⏳ Ждём оплату — заказ появится «В работе» после оплаты</span>`;
   if (!next) return `<span class="done-note">${o.status === "done" ? "Заказ выполнен" : "Заказ отменён"}</span>`;
   if (o.status === "assembling") {
-    if (!o.photo_status || o.photo_status === "changes")
-      return `<button class="primary" onclick="pickBouquetPhoto(${o.id})">📸 ${o.photo_status === "changes" ? "Новое фото" : "Фото на согласование"}</button>`;
+    // Фото — по желанию (кнопка 📸 рядом). Главная кнопка сразу ведёт дальше.
+    // Только если покупатель попросил изменить — сначала новое фото.
+    if (o.photo_status === "changes")
+      return `<button class="primary" onclick="pickBouquetPhoto(${o.id})">📸 Новое фото</button>`;
     if (o.photo_status === "pending")
       return `<button class="primary wait" onclick="sendWithoutOk(${o.id})">⏳ Ждём ответа</button>`;
   }

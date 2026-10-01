@@ -29,7 +29,7 @@ function createPayment({ orderId, amount, description, returnUrl }) {
       confirmation: { type: 'redirect', return_url: returnUrl },
       capture: true,
       description: description.slice(0, 128),
-      metadata: { order_id: String(orderId) },
+      metadata: { order_id: String(orderId), app: 'flowerbot' },
     }),
   });
 }

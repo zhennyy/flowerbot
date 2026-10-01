@@ -5,3 +5,4 @@ node_modules/
 uploads/
 .keep
 *.db-journal
+railway-vars.txt
