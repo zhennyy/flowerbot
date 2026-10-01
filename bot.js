@@ -333,7 +333,7 @@ app.post('/api/orders', requireTelegram(BOT_TOKEN), orderLimit, async (req, res)
   }
 
   // Онлайн-оплата включена — сначала оплата, а флористу сообщим, когда деньги придут
-  if (payments.enabled) {
+  if (payments.enabled && saved.delivery_fee != null) {
     try {
       const pay = await payments.createPayment({
         orderId: id, amount: saved.total,
@@ -372,13 +372,25 @@ async function notifyNewOrder(o, paid = false) {
 // ─── Оплата: уведомления ЮKassa и проверка неоплаченных ──
 async function onPaid(orderId) {
   if (!db.markPaid(orderId)) return;                 // уже отмечен — повторное уведомление игнорируем
-  const o = db.getOrder(orderId);
+  let o = db.getOrder(orderId);
+  if (o.status === 'cancelled') {                    // заказ отменили, а покупатель всё-таки оплатил — не теряем деньги
+    db.restock(o, -1); db.setOrderStatus(orderId, 'new'); o = db.getOrder(orderId);
+    if (OWNER_ID) bot.telegram.sendMessage(OWNER_ID, `⚠️ Заказ №${o.id} был отменён, но покупатель его оплатил — вернула заказ в работу. Проверьте, есть ли цветы, или оформите возврат в ЮKassa.`).catch(() => {});
+  }
   if (o.status_msg_id) await bot.telegram.deleteMessage(o.user_id, o.status_msg_id).catch(() => {}); // убираем «Оплатить»
   db.setStatusMsg(orderId, null);
   await notifyNewOrder(o, true);
 }
-async function onUnpaid(orderId, reason) {
-  if (!db.markPaymentCanceled(orderId)) return;
+async function onLatePaid(orderId) {
+  if (!db.revivePaid(orderId)) return;
+  const o0 = db.getOrder(orderId);
+  db.restock(o0, -1); db.setOrderStatus(orderId, 'new');
+  const o = db.getOrder(orderId);
+  await notifyNewOrder(o, true);
+  if (OWNER_ID) bot.telegram.sendMessage(OWNER_ID, `⚠️ Оплата по заказу №${o.id} пришла уже после автоотмены — заказ снова в работе. Проверьте наличие цветов.`).catch(() => {});
+}
+async function onUnpaid(orderId, reason, expired = false) {
+  if (!(expired ? db.markPaymentExpired(orderId) : db.markPaymentCanceled(orderId))) return;
   const o = db.getOrder(orderId);
   if (o.status !== 'cancelled') { db.restock(o, +1); db.setOrderStatus(orderId, 'cancelled'); }
   if (o.status_msg_id) await bot.telegram.deleteMessage(o.user_id, o.status_msg_id).catch(() => {});
@@ -391,7 +403,9 @@ async function syncPayment(paymentId) {
   const orderId = Number(p.metadata?.order_id);
   const o = orderId && db.getOrder(orderId);
   if (!o || o.payment_id !== p.id) return;
-  if (p.status === 'succeeded' && Math.round(Number(p.amount.value)) === o.total) await onPaid(orderId);
+  if (p.status === 'succeeded' && Math.round(Number(p.amount.value)) === o.total) {
+    if (o.payment_status === 'expired' || o.payment_status === 'canceled') await onLatePaid(orderId); else await onPaid(orderId);
+  }
   if (p.status === 'canceled') await onUnpaid(orderId, 'оплата не прошла');
 }
 app.post('/yookassa-webhook', async (req, res) => {
@@ -410,8 +424,16 @@ setInterval(async () => {
       const p = await payments.getPayment(o.payment_id);
       if (p.status === 'succeeded' && Math.round(Number(p.amount.value)) === o.total) await onPaid(o.id);
       else if (p.status === 'canceled') await onUnpaid(o.id, 'оплата не прошла');
-      else if (o.age_min >= PAY_TIMEOUT_MIN) await onUnpaid(o.id, `оплата не поступила за ${PAY_TIMEOUT_MIN} минут`);
+      else if (o.age_min >= PAY_TIMEOUT_MIN) await onUnpaid(o.id, `оплата не поступила за ${PAY_TIMEOUT_MIN} минут`, true);
     } catch (e) { console.error('Проверка оплаты:', e.message); }
+  }
+  // Автоотменённые за последние сутки: вдруг оплата всё же прошла
+  for (const o of db.getExpired()) {
+    try {
+      const p = await payments.getPayment(o.payment_id);
+      if (p.status === 'succeeded' && Math.round(Number(p.amount.value)) === o.total) await onLatePaid(o.id);
+      else if (p.status === 'canceled') db.setPaymentStatus(o.id, 'canceled');
+    } catch (e) { console.error('Проверка поздней оплаты:', e.message); }
   }
 }, 60_000).unref();
 
@@ -632,6 +654,10 @@ bot.action(/^st:(\d+):(\w+)$/, async (ctx) => {
 chat = setupChat(bot, { OWNER_ID, WEBAPP_URL, orderText, esc });
 
 // В Telegraf 4.16 код «после запуска» передаётся колбэком (promise launch() завершается только при остановке бота)
+// Ошибка в одном обработчике не должна ронять бота целиком
+bot.catch((err, ctx) => console.error('Ошибка бота:', ctx?.updateType, err?.message || err));
+process.on('unhandledRejection', (e) => console.error('Необработанная ошибка:', e?.message || e));
+
 bot.launch(async () => {
   console.log('🤖 Бот запущен');
   try {

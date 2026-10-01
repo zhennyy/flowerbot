@@ -339,6 +339,16 @@ module.exports = {
   // Все ждущие оплаты + сколько минут прошло с оформления
   getUnpaid: () => db.prepare(`SELECT *, (julianday('now') - julianday(created_at)) * 1440 AS age_min
                                FROM orders WHERE payment_status = 'pending'`).all().map(parseOrder),
+  // Оплата не пришла за 30 минут — заказ отменён, но платёж ещё может пройти (покупатель задержался на странице оплаты).
+  // Такие заказы проверяем ещё сутки, чтобы не потерять деньги.
+  markPaymentExpired: (id) => db.prepare(`UPDATE orders SET payment_status = 'expired'
+                                          WHERE id = ? AND payment_status = 'pending'`).run(id).changes === 1,
+  getExpired: () => db.prepare(`SELECT * FROM orders WHERE payment_status = 'expired'
+                                AND created_at >= datetime('now', '-1 day')`).all().map(parseOrder),
+  setPaymentStatus: (id, st) => db.prepare('UPDATE orders SET payment_status = ? WHERE id = ?').run(st, id),
+  // Деньги пришли за отменённый заказ — возвращаем его в работу
+  revivePaid: (id) => db.prepare(`UPDATE orders SET payment_status = 'paid', paid_at = datetime('now')
+                                  WHERE id = ? AND payment_status IN ('expired', 'canceled')`).run(id).changes === 1,
   getUnpaidOlderThan: (min) => db.prepare(`SELECT * FROM orders WHERE payment_status = 'pending'
                                            AND created_at <= datetime('now', ?)`).all(`-${min} minutes`).map(parseOrder),
 
