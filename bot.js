@@ -395,15 +395,18 @@ app.post('/yookassa-webhook', async (req, res) => {
   const id = req.body?.object?.id;
   if (payments.enabled && id) syncPayment(id).catch((e) => console.error('ЮKassa webhook:', e.message));
 });
-// Раз в минуту: заказы без оплаты дольше 30 минут — проверяем и отменяем, цветы возвращаем на склад
+// Раз в минуту сами спрашиваем ЮKassa о неоплаченных заказах.
+// Так оплата подтверждается за минуту даже без уведомлений (например, пока бот на ноутбуке),
+// а заказы без оплаты дольше 30 минут отменяются, цветы возвращаются на склад.
 const PAY_TIMEOUT_MIN = 30;
 setInterval(async () => {
   if (!payments.enabled) return;
-  for (const o of db.getUnpaidOlderThan(PAY_TIMEOUT_MIN)) {
+  for (const o of db.getUnpaid()) {
     try {
       const p = await payments.getPayment(o.payment_id);
-      if (p.status === 'succeeded') await onPaid(o.id);
-      else await onUnpaid(o.id, `оплата не поступила за ${PAY_TIMEOUT_MIN} минут`);
+      if (p.status === 'succeeded' && Math.round(Number(p.amount.value)) === o.total) await onPaid(o.id);
+      else if (p.status === 'canceled') await onUnpaid(o.id, 'оплата не прошла');
+      else if (o.age_min >= PAY_TIMEOUT_MIN) await onUnpaid(o.id, `оплата не поступила за ${PAY_TIMEOUT_MIN} минут`);
     } catch (e) { console.error('Проверка оплаты:', e.message); }
   }
 }, 60_000).unref();

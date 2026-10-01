@@ -336,6 +336,9 @@ module.exports = {
                                 WHERE id = ? AND payment_status = 'pending'`).run(id).changes === 1,
   markPaymentCanceled: (id) => db.prepare(`UPDATE orders SET payment_status = 'canceled'
                                            WHERE id = ? AND payment_status = 'pending'`).run(id).changes === 1,
+  // Все ждущие оплаты + сколько минут прошло с оформления
+  getUnpaid: () => db.prepare(`SELECT *, (julianday('now') - julianday(created_at)) * 1440 AS age_min
+                               FROM orders WHERE payment_status = 'pending'`).all().map(parseOrder),
   getUnpaidOlderThan: (min) => db.prepare(`SELECT * FROM orders WHERE payment_status = 'pending'
                                            AND created_at <= datetime('now', ?)`).all(`-${min} minutes`).map(parseOrder),
 
