@@ -17,7 +17,8 @@ if (!BOT_TOKEN || !WEBAPP_URL) {
 }
 if (!OWNER_ID) console.warn('⚠️  OWNER_ID не задан — админка и уведомления о заказах отключены. Узнай свой ID командой /myid');
 
-const bot = new Telegraf(BOT_TOKEN);
+// TELEGRAM_API_ROOT — посредник для Telegram (нужен, если сервер в России)
+const bot = new Telegraf(BOT_TOKEN, process.env.TELEGRAM_API_ROOT ? { telegram: { apiRoot: process.env.TELEGRAM_API_ROOT } } : {});
 let chat; // кнопки и диалоги в чате — подключаются ниже, после команд (см. chat.js)
 const app = express();
 // ngrok и Railway стоят «перед» сервером — берём настоящий IP посетителя из их заголовка
