@@ -313,9 +313,13 @@ app.post('/api/orders', requireTelegram(BOT_TOKEN), orderLimit, async (req, res)
   if (order.phone.replace(/\D/g, '').length < 10) return res.status(400).json({ error: 'Проверьте номер телефона' });
   if (order.address.length < 5) return res.status(400).json({ error: 'Укажите адрес доставки' });
   if (!/^\d{4}-\d{2}-\d{2}$/.test(order.delivery_date)) return res.status(400).json({ error: 'Выберите дату доставки' });
-  const yesterday = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
-  if (order.delivery_date < yesterday) return res.status(400).json({ error: 'Дата доставки уже прошла' });
+  if (order.delivery_date < mskDay(0)) return res.status(400).json({ error: 'Дата доставки уже прошла' });
   if (!TIME_SLOTS.includes(order.delivery_time)) return res.status(400).json({ error: 'Выберите время доставки' });
+  // сегодня: интервал должен закончиться хотя бы через час (по Москве)
+  const mskHour = new Date(Date.now() + 3 * 3600e3).getUTCHours();
+  if (order.delivery_date === mskDay(0) && parseInt(order.delivery_time.split('–')[1], 10) <= mskHour + 1) {
+    return res.status(400).json({ error: 'На этот интервал уже не успеем 🙈 Выберите время попозже' });
+  }
   const day = slotsFor(order.delivery_date);
   if (day.closed) return res.status(400).json({ error: 'В этот день мы не работаем 🌿 Выберите другую дату' });
   if (!day.slots.find((x) => x.time === order.delivery_time).available) {
@@ -379,7 +383,7 @@ async function notifyNewOrder(o, paid = false) {
       { parse_mode: 'HTML', ...chat.orderKeyboard(o) })
     .catch((e) => console.error('Не смогла написать покупателю:', e.message));
   if (OWNER_ID) {
-    const payNote = paid ? '💳 Оплачен онлайн' : payments.enabled ? '⚠️ Онлайн-оплата не создалась — договоритесь об оплате' : '';
+    const payNote = paid ? '💳 Оплачен онлайн' : payments.enabled ? (o.delivery_fee == null ? '⚠️ Доставка не рассчиталась (адрес не нашёлся на карте) — уточните стоимость и договоритесь об оплате' : '⚠️ Онлайн-оплата не создалась — договоритесь об оплате') : '';
     await bot.telegram
       .sendMessage(OWNER_ID, `🔔 Новый заказ!${payNote ? '\n' + payNote : ''}\n\n${orderText(o, true)}`, { parse_mode: 'HTML', ...statusButtons(o.id) })
       .catch((e) => console.error('Не смогла написать владелице:', e.message));
@@ -705,7 +709,7 @@ bot.launch(async () => {
   } catch (e) {
     console.error('Не удалось настроить меню бота:', e.message);
   }
-});
+}).catch((e) => { console.error('Бот не запустился:', e.message); process.exit(1); });
 
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
