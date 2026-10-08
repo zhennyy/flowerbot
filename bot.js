@@ -21,7 +21,7 @@ if (!OWNER_ID) console.warn('⚠️  OWNER_ID не задан — админка
 const bot = new Telegraf(BOT_TOKEN, process.env.TELEGRAM_API_ROOT ? { telegram: { apiRoot: process.env.TELEGRAM_API_ROOT.replace(/\/*$/, '/') } } : {});
 let chat; // кнопки и диалоги в чате — подключаются ниже, после команд (см. chat.js)
 const app = express();
-// ngrok и Railway стоят «перед» сервером — берём настоящий IP посетителя из их заголовка
+// перед сервером стоит nginx на этом же компьютере — берём настоящий IP посетителя из его заголовка
 app.set('trust proxy', 'loopback');
 // Обычные запросы — до 100 КБ; загрузка фото из админки — до 8 МБ
 const jsonSmall = express.json({ limit: '100kb' }), jsonBig = express.json({ limit: '8mb' });
@@ -31,7 +31,7 @@ app.use((req, res, next) => (req.path === '/api/admin/upload' || /^\/api\/admin\
   ? ownerFirst(req, res, () => jsonBig(req, res, next))
   : jsonSmall(req, res, next)));
 
-// Фото, загруженные из админки. На Railway папка должна лежать на диске /data (DATA_DIR=/data)
+// Фото, загруженные из админки. На сервере лежат в /data/flowerbot/uploads (DATA_DIR=/data/flowerbot)
 const UPLOAD_DIR = path.join(process.env.DATA_DIR || __dirname, 'uploads');
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '30d' }));

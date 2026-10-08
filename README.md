@@ -21,26 +21,31 @@ Telegram-бот с витриной (Mini App): каталог с фото, ра
 
 1. `npm install`
 2. Скопировать `.env.example` в `.env` и заполнить
-3. В одном терминале `ngrok http 3000`, адрес вписать в `WEBAPP_URL`
+3. Для теста в Telegram нужен HTTPS-адрес: в одном терминале `ngrok http 3000`, адрес вписать в `WEBAPP_URL`
 4. В другом терминале `npm start`
 
-## Переезд на Railway (работа 24/7)
+## Работа 24/7 на своём сервере (VPS)
 
-1. **GitHub.** В VS Code: значок ветки слева → «Publish to GitHub» → приватный репозиторий `flower-shop-bot`.
-   Файлы `.env`, базы и фото на GitHub не попадут (они в `.gitignore`).
-2. **Railway** → New Project → Deploy from GitHub repo → выбрать `flower-shop-bot`.
-3. **Диск для данных:** в сервисе → Settings → Volumes → New Volume, путь **`/data`**.
-   Без него база и фото будут стираться при каждом обновлении!
-4. **Домен:** Settings → Networking → Generate Domain. Получится `https://….up.railway.app`.
-5. **Variables** (переменные) — вписать:
-   - `BOT_TOKEN`, `OWNER_ID`, `YOOKASSA_SHOP_ID`, `YOOKASSA_SECRET_KEY` — как в `.env`
-   - `WEBAPP_URL` — домен из шага 4
-   - `DATA_DIR` = `/data`
-6. **Остановить бота на ноутбуке** (`Ctrl+C`) — один и тот же бот не может работать в двух местах
-   (иначе в логах будет `409 Conflict`).
-7. **ЮKassa** → Интеграция → HTTP-уведомления → адрес `https://….up.railway.app/yookassa-webhook`,
-   событие `payment.succeeded` и `payment.canceled`.
-8. Проверить: в логах Railway строки `🤖 Бот запущен` и `🌐 Витрина…`, в Telegram `/start`.
+Бот работает на собственном сервере Ubuntu вместе с остальными проектами BotForAll.
+Установка сервера описана в [BotForAll/deploy/README.md](https://github.com/zhennyy/botforall/blob/main/deploy/README.md).
+
+| Что | Где |
+|---|---|
+| Код | `/opt/bots/flowerbot` |
+| База и фото | `/data/flowerbot` (переменная `DATA_DIR`) — обновления их не трогают |
+| Адрес витрины | `https://fleur.botforall.ru` (nginx + HTTPS, порт 3002) |
+| Резервная копия | каждую ночь в `/var/backups/botforall`, хранится 14 дней |
+
+1. **Ключи:** `bfa env flowerbot` → вписать `BOT_TOKEN`, `OWNER_ID`, `YOOKASSA_SHOP_ID`, `YOOKASSA_SECRET_KEY`,
+   `WEBAPP_URL=https://fleur.botforall.ru`, `DATA_DIR=/data/flowerbot`.
+   Если сервер в России — ещё `TELEGRAM_API_ROOT` (адрес посредника для Telegram).
+2. **Запуск:** `bfa start flowerbot`, проверить `bfa logs flowerbot` — строки `🤖 Бот запущен` и `🌐 Витрина…`.
+3. **Один бот — одно место:** на ноутбуке бота с тем же токеном не запускать (иначе `409 Conflict`).
+4. **ЮKassa** → Интеграция → HTTP-уведомления → `https://botforall.ru/yookassa-webhook`,
+   события `payment.succeeded` и `payment.canceled`. Сервер сам разошлёт уведомление всем магазинам,
+   а каждый бот проверит платёж в ЮKassa и возьмёт только свой.
+5. **Обновление** после изменений в коде: `git push`, затем на сервере `bfa update`.
+6. Проверить в Telegram: `/start`.
 
 ## Тестовая оплата
 

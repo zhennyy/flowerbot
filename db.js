@@ -2,8 +2,7 @@
 const path = require('path');
 const Database = require('better-sqlite3');
 
-// На Railway база будет лежать на диске /data (как в RadiatorPro), локально — в папке проекта
-// На Railway всё храним на диске /data (переменная DATA_DIR), локально — в папке проекта
+// На сервере база лежит в /data/flowerbot (DATA_DIR), локально — в папке проекта
 const DB_PATH = process.env.DB_PATH || path.join(process.env.DATA_DIR || __dirname, 'shop.db');
 const db = new Database(DB_PATH);
 
