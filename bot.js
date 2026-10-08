@@ -22,10 +22,14 @@ const bot = new Telegraf(BOT_TOKEN, process.env.TELEGRAM_API_ROOT ? { telegram: 
 let chat; // кнопки и диалоги в чате — подключаются ниже, после команд (см. chat.js)
 const app = express();
 // ngrok и Railway стоят «перед» сервером — берём настоящий IP посетителя из их заголовка
-app.set('trust proxy', 1);
+app.set('trust proxy', 'loopback');
 // Обычные запросы — до 100 КБ; загрузка фото из админки — до 8 МБ
 const jsonSmall = express.json({ limit: '100kb' }), jsonBig = express.json({ limit: '8mb' });
-app.use((req, res, next) => (req.path === '/api/admin/upload' || /^\/api\/admin\/orders\/\d+\/photo$/.test(req.path) ? jsonBig : jsonSmall)(req, res, next));
+// большие тела принимаем только после проверки, что это владелица (иначе любой мог бы слать по 8 МБ)
+const ownerFirst = requireOwner(BOT_TOKEN, OWNER_ID);
+app.use((req, res, next) => (req.path === '/api/admin/upload' || /^\/api\/admin\/orders\/\d+\/photo$/.test(req.path)
+  ? ownerFirst(req, res, () => jsonBig(req, res, next))
+  : jsonSmall(req, res, next)));
 
 // Фото, загруженные из админки. На Railway папка должна лежать на диске /data (DATA_DIR=/data)
 const UPLOAD_DIR = path.join(process.env.DATA_DIR || __dirname, 'uploads');
@@ -424,7 +428,7 @@ async function syncPayment(paymentId) {
 app.post('/yookassa-webhook', async (req, res) => {
   res.sendStatus(200); // ЮKassa ждёт быстрый ответ
   const id = req.body?.object?.id;
-  if (payments.enabled && id) syncPayment(id).catch((e) => console.error('ЮKassa webhook:', e.message));
+  if (payments.enabled && /^[\w-]{1,64}$/.test(String(id || ''))) syncPayment(id).catch((e) => console.error('ЮKassa webhook:', e.message));
 });
 // Раз в минуту сами спрашиваем ЮKassa о неоплаченных заказах.
 // Так оплата подтверждается за минуту даже без уведомлений (например, пока бот на ноутбуке),
@@ -633,7 +637,7 @@ app.put('/api/admin/delivery', owner, handle((req) => {
   return t;
 }));
 
-app.listen(PORT, () => console.log(`🌐 Витрина: http://localhost:${PORT}`));
+app.listen(PORT, process.env.HOST || '127.0.0.1', () => console.log(`🌐 Витрина: http://localhost:${PORT}`));
 
 // ─── Бот ─────────────────────────────────────────────────
 const isOwner = (ctx) => OWNER_ID && String(ctx.from.id) === String(OWNER_ID);

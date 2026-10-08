@@ -64,7 +64,16 @@ module.exports = function setupChat(bot, { OWNER_ID, WEBAPP_URL, orderText, esc 
   };
   const nameOf = (from) => `${from.first_name || ''} ${from.last_name || ''}`.trim() || 'Покупатель';
 
+  // не больше 20 сообщений флористу за 10 минут от одного человека — защита от флуда
+  const chatHits = new Map();
+  const tooChatty = (id) => {
+    const now = Date.now(), arr = (chatHits.get(id) || []).filter((t) => now - t < 600000);
+    arr.push(now); chatHits.set(id, arr);
+    if (chatHits.size > 5000) chatHits.clear();
+    return arr.length > 20;
+  };
   async function fromBuyer(ctx, { text = null, photo = null, orderId = null }) {
+    if (tooChatty(String(ctx.from.id))) return ctx.reply('Слишком много сообщений подряд — флорист ответит, как освободится 🌷');
     db.addMessage({ user_id: ctx.from.id, name: nameOf(ctx.from), username: ctx.from.username || null,
                     order_id: orderId || null, direction: 'in', text, photo });
     if (OWNER_ID) {
@@ -180,9 +189,10 @@ module.exports = function setupChat(bot, { OWNER_ID, WEBAPP_URL, orderText, esc 
     const fileId = ctx.message.photo.at(-1).file_id; // самое большое разрешение
     const w = takeWaiting(ctx.from.id);
     // Номер заказа можно указать и в подписи: «12», «№12» или «#12»
-    const fromCaption = (ctx.message.caption || '').match(/(?:№|#)?\s*(\d+)/);
+    const cap = ctx.message.caption || '';
+    const fromCaption = cap.match(/^\s*(?:№|#)?\s*(\d+)\s*$/) || cap.match(/(?:№|#)\s*(\d+)/); // «12», «№12», «#12» — но не «на 8 марта»
     const orderId = w?.type === 'photo' ? w.orderId : fromCaption ? Number(fromCaption[1]) : null;
-    if (!orderId) return ctx.reply('Чтобы отправить фото покупателю, подпишите его номером заказа, например «12» 📸');
+    if (!orderId) return ctx.reply('Чтобы отправить фото покупателю, подпишите его номером заказа, например «12» или «№12» 📸');
     waiting.delete(String(ctx.from.id));
     try {
       await sendBouquetPhoto(orderId, fileId);

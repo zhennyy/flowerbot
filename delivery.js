@@ -49,9 +49,12 @@ const cache = new Map();
 let queue = Promise.resolve();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+let pending = 0;
 function geocode(query) {
   const key = query.toLowerCase().replace(/\s+/g, ' ').trim();
   if (cache.has(key)) return Promise.resolve(cache.get(key));
+  if (pending >= 15) return Promise.reject(new Error('Сервис адресов перегружен — попробуйте через минуту')); // очередь не растёт бесконечно
+  pending++;
   const job = queue.then(async () => {
     const url = 'https://nominatim.openstreetmap.org/search?' + new URLSearchParams({
       q: query, format: 'jsonv2', addressdetails: '1', limit: '1', 'accept-language': 'ru', countrycodes: 'ru',
@@ -72,6 +75,7 @@ function geocode(query) {
     cache.set(key, result);
     return result;
   });
+  job.finally(() => { pending--; }).catch(() => {});
   queue = job.catch(() => {}).then(() => sleep(1100)); // пауза между запросами
   return job;
 }
