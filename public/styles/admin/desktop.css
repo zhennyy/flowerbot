@@ -1,0 +1,7 @@
+
+/* На ноутбуке — аккуратная колонка по центру, а не на весь экран */
+@media (min-width:820px){
+  body{padding-left:max(0px,calc(50% - 380px));padding-right:max(0px,calc(50% - 380px))}
+  .sheet{left:50%;right:auto;width:560px;transform:translate(-50%,100%)} .open .sheet{transform:translate(-50%,0)}
+  .thread{left:max(0px,calc(50% - 380px));right:max(0px,calc(50% - 380px))}
+}

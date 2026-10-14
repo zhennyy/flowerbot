@@ -35,7 +35,11 @@ function createApp(bot) {
   // Фото, загруженные из админки (на сервере — /data/flowerbot/uploads), и сама витрина
   fs.mkdirSync(photos.uploadsDir, { recursive: true });
   app.use('/uploads', express.static(photos.uploadsDir, { maxAge: '30d' }));
-  app.use(express.static(PUBLIC_DIR));
+  // Страницы, стили и скрипты (ES-модули) браузер каждый раз сверяет с сервером (ETag, без скачивания, если не менялись):
+  // после обновления Telegram не покажет старую витрину вперемешку с новыми модулями
+  app.use(express.static(PUBLIC_DIR, {
+    setHeaders: (response, filePath) => { if (/\.(html|css|js)$/.test(filePath)) response.set('Cache-Control', 'no-cache'); },
+  }));
 
   // Не больше 120 запросов к API в минуту с одного адреса — от «долбёжки» сервера
   app.use('/api', createRateLimit({ max: API_REQUESTS_PER_MINUTE, windowMs: 60000, key: (request) => request.ip, message: 'Слишком много запросов, подождите минутку' }));

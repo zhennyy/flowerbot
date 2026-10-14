@@ -1,0 +1,20 @@
+
+/* Ноутбук / широкое окно: контент по центру, больше колонок, карточка товара — окном по центру */
+@media (min-width:760px){
+  body{padding-left:max(0px,calc(50% - 520px));padding-right:max(0px,calc(50% - 520px))}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:14px}
+  .chips{flex-wrap:wrap;overflow:visible}
+  .card .pic{font-size:56px}
+  .cartbar{left:50%;right:auto;width:440px;transform:translate(-50%,140%)}
+  .cartbar.show{transform:translate(-50%,0)}
+  .cartbar.bump{animation:none}
+  .sheet{left:50%;right:auto;bottom:auto;top:50%;width:520px;max-height:88vh;border-radius:24px;
+    transform:translate(-50%,-40%) scale(.96);opacity:0;pointer-events:none;transition:.25s}
+  .open .sheet{transform:translate(-50%,-50%);opacity:1;pointer-events:auto}
+  .sheet .pic{aspect-ratio:16/10}
+  .grab{display:none}
+  .page{padding-left:max(0px,calc(50% - 340px));padding-right:max(0px,calc(50% - 340px))}
+  .addons{display:grid;grid-template-columns:repeat(auto-fill,minmax(116px,1fr));overflow:visible}
+  .addon{width:auto}
+  .page .footer{left:max(0px,calc(50% - 340px));right:max(0px,calc(50% - 340px))}
+}

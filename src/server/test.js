@@ -39,5 +39,11 @@ test('кривой JSON — короткая ошибка без стека; в�
   assert.equal(storefront.status, 200);
   assert.match(await storefront.text(), /<html/i);
   assert.equal((await fetch(shop.base + '/admin.html')).status, 200);
+  assert.equal(storefront.headers.get('cache-control'), 'no-cache');
+  const mainModule = await fetch(shop.base + '/scripts/shop/main.js');
+  assert.equal(mainModule.status, 200);
+  assert.match(mainModule.headers.get('content-type'), /javascript/);
+  assert.equal(mainModule.headers.get('cache-control'), 'no-cache');
+  assert.equal((await fetch(shop.base + '/styles/admin/base.css')).status, 200);
   assert.equal((await fetch(shop.base + '/photos/1-utro-v-provanse.jpg')).status, 200);
 });
