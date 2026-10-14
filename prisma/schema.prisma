@@ -1,0 +1,105 @@
+// Схема базы «Флёра» для Prisma.
+// Таблицы уже существуют (SQLite), поэтому имена полей совпадают с колонками в базе,
+// а сама структура меняется SQL-миграциями из prisma/migrations (их запускает src/database/migrations.js).
+// Связей между моделями нет намеренно: букет можно удалить, а старые заказы с ним должны остаться
+// (состав заказа хранится в самом заказе — JSON в поле items).
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/database/generated"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Product {
+  id          Int     @id @default(autoincrement())
+  category    String
+  name        String
+  description String  @default("")
+  price       Int // в рублях; у букета с размерами — цена самого маленького
+  photo_url   String?
+  badge       String? // «Хит», «Новинка» или пусто
+  bg          String? @default("#f6e3ea") // цвет фона под фото, пока грузится
+  in_stock    Int     @default(1) // 1 = есть, 0 = скрыть из витрины
+  sort        Int     @default(0) // порядок в каталоге
+  unit        String? // NULL = готовый букет, 'шт' = поштучно
+  min_qty     Int     @default(1) // минимум в заказе
+  stock       Int? // NULL = без учёта остатка
+  addon       Int     @default(0) // 1 = «добавить к заказу» (ваза, шары…)
+  emoji       String? // картинка-эмодзи, если нет фото
+  sizes       String? // JSON: [{"name":"S","price":2490,"note":"11 цветов"}, …]
+
+  @@map("products")
+}
+
+model Order {
+  id             Int     @id @default(autoincrement())
+  user_id        Int // Telegram ID покупателя (чтобы писать ему)
+  username       String?
+  customer_name  String
+  phone          String
+  address        String
+  delivery_date  String // 2026-10-01
+  delivery_time  String // «12:00–15:00»
+  recipient      String? // если дарят кому-то другому
+  card_text      String? // текст открытки
+  comment        String?
+  items          String // JSON: [{id, name, price, qty, unit, size}]
+  total          Int // в рублях, вместе с доставкой
+  status         String  @default("new") // new | confirmed | assembling | delivering | done | cancelled
+  created_at     String  @default(dbgenerated("CURRENT_TIMESTAMP"))
+  delivery_fee   Int? // NULL = стоимость уточним вручную
+  delivery_km    Float?
+  delivery_zone  String? // «Санкт-Петербург» / «Ленобласть»
+  done_at        String? // когда доставили
+  review_asked   Int     @default(0)
+  rating         Int? // 1–5 ⭐
+  review_text    String?
+  status_msg_id  Int? // последнее сообщение покупателю о статусе (старое удаляем)
+  bouquet_photo  String? // file_id фото готового букета в Telegram
+  photo_status   String? // pending — ждём ответа · approved — одобрен · changes — просят изменить · auto — без ответа
+  photo_sent_at  String?
+  photo_reminded Int     @default(0)
+  payment_id     String?
+  payment_status String? // NULL без онлайн-оплаты · pending · paid · canceled · expired
+  paid_at        String?
+  pay_url        String? // ссылка на оплату — вернуться к оплате из «Мои заказы»
+
+  @@map("orders")
+}
+
+model Setting {
+  key   String @id
+  value String // JSON
+
+  @@map("settings")
+}
+
+model Reminder {
+  id         Int    @id @default(autoincrement())
+  user_id    Int
+  order_id   Int
+  occasion   String // «🎂 День рождения», «💍 Годовщина»…
+  event_date String // дата повода (следующая)
+  remind_at  String // когда напомнить (за 3 дня)
+
+  @@map("reminders")
+}
+
+model Message {
+  id         Int     @id @default(autoincrement())
+  user_id    Int // покупатель
+  name       String? // как его зовут в Telegram
+  username   String?
+  order_id   Int? // если вопрос по заказу
+  direction  String // 'in' — от покупателя, 'out' — от флориста
+  text       String?
+  photo      String? // file_id фото в Telegram
+  is_read    Int     @default(0)
+  created_at String  @default(dbgenerated("CURRENT_TIMESTAMP"))
+
+  @@index([user_id, id], map: "messages_user")
+  @@map("messages")
+}
