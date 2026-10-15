@@ -1,38 +1,195 @@
 /* Статистика: период, показатели, столбики выручки, топ товаров, доли */
 /* Статистика */
-.period{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:4px 16px 0}
-.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px;margin-top:10px}
-.kpi{background:var(--card);border-radius:16px;padding:12px 14px;box-shadow:var(--shadow)}
-.kpi .v{font-size:22px;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums}
-.kpi .l{color:var(--muted);font-size:12.5px}
-.kpi .s{color:var(--muted);font-size:12px;margin-top:2px}
-.chart{position:relative;height:150px;display:flex;align-items:flex-end;gap:2px;margin-top:12px;border-bottom:1px solid var(--line)}
-.bar{flex:1;min-width:0;height:100%;display:flex;align-items:flex-end;cursor:pointer}
-.bar span{display:block;width:100%;background:var(--accent);border-radius:4px 4px 0 0;min-height:0}
-.bar.zero span{height:0}
-.bar:hover span,.bar.sel span{opacity:.75}
-.axis{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;margin-top:4px}
-.ymax{position:absolute;top:-2px;left:0;color:var(--muted);font-size:11px;border-top:1px dashed var(--line);width:100%;padding-top:2px}
-.tip{min-height:20px;font-size:13px;margin-top:6px;text-align:center}
-.toprow{margin:10px 0}
-.toprow .t{display:flex;justify-content:space-between;font-size:14px;gap:8px}
-.toprow .t span:last-child{white-space:nowrap;font-variant-numeric:tabular-nums}
-.toprow .track{height:6px;background:var(--line);border-radius:4px;margin-top:5px;overflow:hidden}
-.toprow .fill{height:100%;background:var(--accent);border-radius:4px}
+.period {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 4px 16px 0;
+}
+.kpis {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 0 16px;
+  margin-top: 10px;
+}
+.kpi {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: var(--shadow);
+}
+.kpi .v {
+  font-size: 22px;
+  font-weight: 600;
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+.kpi .l {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.kpi .s {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 2px;
+}
+.chart {
+  position: relative;
+  height: 150px;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  margin-top: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.bar {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  cursor: pointer;
+}
+.bar span {
+  display: block;
+  width: 100%;
+  background: var(--accent);
+  border-radius: 4px 4px 0 0;
+  min-height: 0;
+}
+.bar.zero span {
+  height: 0;
+}
+.bar:hover span,
+.bar.sel span {
+  opacity: 0.75;
+}
+.axis {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 4px;
+}
+.ymax {
+  position: absolute;
+  top: -2px;
+  left: 0;
+  color: var(--muted);
+  font-size: 11px;
+  border-top: 1px dashed var(--line);
+  width: 100%;
+  padding-top: 2px;
+}
+.tip {
+  min-height: 20px;
+  font-size: 13px;
+  margin-top: 6px;
+  text-align: center;
+}
+.toprow {
+  margin: 10px 0;
+}
+.toprow .t {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  gap: 8px;
+}
+.toprow .t span:last-child {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.toprow .track {
+  height: 6px;
+  background: var(--line);
+  border-radius: 4px;
+  margin-top: 5px;
+  overflow: hidden;
+}
+.toprow .fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+}
 /* Статистика: блоки */
-#statsView .card .num{margin-bottom:12px;font-size:16px}
-.stack{display:flex;gap:2px;height:12px;border-radius:6px;overflow:hidden;background:var(--line)}
-.stack span{display:block;height:100%}
-.stack span:first-child{border-radius:6px 0 0 6px} .stack span:last-child{border-radius:0 6px 6px 0}
-.legend{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin-top:12px}
-.legend.one{grid-template-columns:1fr}
-.lg{display:flex;align-items:center;gap:8px;font-size:13.5px}
-.lg i{width:10px;height:10px;border-radius:3px;flex:none}
-.lg b{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:600}
-.lg small{color:var(--muted);font-size:12px;margin-left:4px;font-weight:400}
-.minis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.mini{background:var(--bg);border-radius:12px;padding:10px 12px}
-.mini .v{font-size:20px;font-weight:600}
-.mini .l{color:var(--muted);font-size:12.5px;margin-top:2px}
-.toprow-qty{color:var(--muted)}
-.mini-unit{font-size:14px}
+#statsView .card .num {
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+.stack {
+  display: flex;
+  gap: 2px;
+  height: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--line);
+}
+.stack span {
+  display: block;
+  height: 100%;
+}
+.stack span:first-child {
+  border-radius: 6px 0 0 6px;
+}
+.stack span:last-child {
+  border-radius: 0 6px 6px 0;
+}
+.legend {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 14px;
+  margin-top: 12px;
+}
+.legend.one {
+  grid-template-columns: 1fr;
+}
+.lg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+}
+.lg i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+.lg b {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.lg small {
+  color: var(--muted);
+  font-size: 12px;
+  margin-left: 4px;
+  font-weight: 400;
+}
+.minis {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.mini {
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.mini .v {
+  font-size: 20px;
+  font-weight: 600;
+}
+.mini .l {
+  color: var(--muted);
+  font-size: 12.5px;
+  margin-top: 2px;
+}
+.toprow-qty {
+  color: var(--muted);
+}
+.mini-unit {
+  font-size: 14px;
+}

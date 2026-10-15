@@ -27,7 +27,9 @@ export async function loadMyOrders(render) {
     return;
   }
   // Значок: сколько заказов сейчас в работе
-  const activeCount = state.myOrders.filter((order) => ACTIVE_STATUSES.includes(order.status) && order.payment_status !== 'canceled').length;
+  const activeCount = state.myOrders.filter(
+    (order) => ACTIVE_STATUSES.includes(order.status) && order.payment_status !== 'canceled',
+  ).length;
   getElement('obadge').hidden = !activeCount;
   getElement('obadge').textContent = activeCount;
   if (render) renderMyOrders();
@@ -68,7 +70,9 @@ function orderCardHtml(order) {
 }
 
 function renderMyOrders() {
-  getElement('myOrders').innerHTML = state.myOrders.length ? state.myOrders.map(orderCardHtml).join('') : EMPTY_ORDERS_HTML;
+  getElement('myOrders').innerHTML = state.myOrders.length
+    ? state.myOrders.map(orderCardHtml).join('')
+    : EMPTY_ORDERS_HTML;
 }
 
 export const myOrdersActions = {

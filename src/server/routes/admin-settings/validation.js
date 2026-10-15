@@ -10,12 +10,16 @@ const clampWholeNumber = (value, maximum) => Math.max(0, Math.min(maximum, Math.
 
 const calendarValidator = createValidator((request) => {
   const form = request.body || {};
-  const closed = [...new Set((Array.isArray(form.closed) ? form.closed : []).map(String).filter(isIsoDate))].sort().slice(0, MAX_CLOSED_DAYS);
+  const closed = [...new Set((Array.isArray(form.closed) ? form.closed : []).map(String).filter(isIsoDate))]
+    .sort()
+    .slice(0, MAX_CLOSED_DAYS);
   return { calendar: { closed, slotLimit: clampWholeNumber(form.slotLimit, MAX_SLOT_LIMIT) } };
 });
 
 // 0 — не подтверждать фото автоматически
-const photoTimeoutValidator = createValidator((request) => ({ minutes: clampWholeNumber(request.body?.minutes, MAX_PHOTO_TIMEOUT_MINUTES) }));
+const photoTimeoutValidator = createValidator((request) => ({
+  minutes: clampWholeNumber(request.body?.minutes, MAX_PHOTO_TIMEOUT_MINUTES),
+}));
 
 // cleanTariff бросает понятную ошибку («Добавьте хотя бы одну зону по городу») — она уйдёт в ответ 400
 const deliveryTariffValidator = createValidator((request) => ({ tariff: cleanTariff(request.body || {}) }));

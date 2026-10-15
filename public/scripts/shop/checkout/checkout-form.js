@@ -24,7 +24,15 @@ export function prepareCheckout() {
   const dateInput = getElement('f_date');
   dateInput.min = toInputDate(today);
   if (!dateInput.value) dateInput.value = toInputDate(today);
-  getElement('days').innerHTML = [['Сегодня', today], ['Завтра', tomorrow]].map(([label, date]) => `<button type="button" class="slot ${dateInput.value === toInputDate(date) ? 'active' : ''}" data-action="pick-date" data-date="${toInputDate(date)}">${label}</button>`).join('');
+  getElement('days').innerHTML = [
+    ['Сегодня', today],
+    ['Завтра', tomorrow],
+  ]
+    .map(
+      ([label, date]) =>
+        `<button type="button" class="slot ${dateInput.value === toInputDate(date) ? 'active' : ''}" data-action="pick-date" data-date="${toInputDate(date)}">${label}</button>`,
+    )
+    .join('');
   loadSlots();
   updateSubmitButton();
   if (!checkoutState.quote && getElement('f_address').value.trim()) requestQuote(0);
@@ -40,7 +48,9 @@ async function loadSlots() {
     renderSlots();
     try {
       checkoutState.dayInfo = await getPublicJson(`/slots?date=${date}`);
-    } catch { /* без ответа сервера показываем все интервалы */ }
+    } catch {
+      /* без ответа сервера показываем все интервалы */
+    }
     if (getElement('f_date').value !== date) return; // пока ждали, выбрали другую дату
   }
   renderSlots();
@@ -48,7 +58,8 @@ async function loadSlots() {
 
 function slotNoteHtml(slotInfo, isFull, isUnavailable) {
   if (isFull && !checkoutState.dayInfo.closed) return '<small>нет мест</small>';
-  if (slotInfo?.left != null && slotInfo.left <= LOW_SLOT_PLACES && !isUnavailable) return `<small>осталось ${slotInfo.left}</small>`;
+  if (slotInfo?.left != null && slotInfo.left <= LOW_SLOT_PLACES && !isUnavailable)
+    return `<small>осталось ${slotInfo.left}</small>`;
   return '';
 }
 
@@ -75,9 +86,15 @@ function pickDate(date) {
 
 export function listenToCheckoutInputs() {
   getElement('f_date').addEventListener('change', () => prepareCheckout());
-  getElement('t_recipient').addEventListener('change', (event) => getElement('recipientBox').classList.toggle('hidden', !event.target.checked));
-  getElement('t_card').addEventListener('change', (event) => getElement('cardBox').classList.toggle('hidden', !event.target.checked));
-  getElement('f_card').addEventListener('input', (event) => { getElement('cardCount').textContent = event.target.value.length; });
+  getElement('t_recipient').addEventListener('change', (event) =>
+    getElement('recipientBox').classList.toggle('hidden', !event.target.checked),
+  );
+  getElement('t_card').addEventListener('change', (event) =>
+    getElement('cardBox').classList.toggle('hidden', !event.target.checked),
+  );
+  getElement('f_card').addEventListener('input', (event) => {
+    getElement('cardCount').textContent = event.target.value.length;
+  });
 }
 
 /** После заказа интервалы перезагрузятся (места могли закончиться) */

@@ -23,26 +23,43 @@ function registerBouquetPhotoHandlers(bot) {
     const approved = context.match[1] === 'ok';
     await setPhotoStatus(order.id, approved ? 'approved' : 'changes');
     await context.answerCbQuery(approved ? 'Спасибо! 🌷' : 'Поправим 💐');
-    await context.editMessageCaption(
-      `📸 <b>Букет к заказу №${order.id}</b>\n${approved ? '✅ Вы одобрили букет — передаём курьеру 🚚' : '✏️ Флорист переделает букет и пришлёт новое фото'}`,
-      { parse_mode: 'HTML' }).catch(() => {});
+    await context
+      .editMessageCaption(
+        `📸 <b>Букет к заказу №${order.id}</b>\n${approved ? '✅ Вы одобрили букет — передаём курьеру 🚚' : '✏️ Флорист переделает букет и пришлёт новое фото'}`,
+        { parse_mode: 'HTML' },
+      )
+      .catch(() => {});
     await messages.saveMessage({
-      user_id: order.user_id, name: customerName(context.from), username: context.from.username || null, order_id: order.id,
-      direction: 'in', text: approved ? '👍 Букет одобрен' : '✏️ Просит изменить букет',
+      user_id: order.user_id,
+      name: customerName(context.from),
+      username: context.from.username || null,
+      order_id: order.id,
+      direction: 'in',
+      text: approved ? '👍 Букет одобрен' : '✏️ Просит изменить букет',
     });
     const ownerId = getOwnerId();
     if (ownerId) {
       const ownerButtons = approved
         ? [Markup.button.callback('🚚 В доставку', `st:${order.id}:delivering`)]
-        : [Markup.button.webApp('📬 Открыть чат', adminUrl({ chat: order.user_id })), Markup.button.callback('📸 Новое фото', `photo:${order.id}`)];
-      await bot.telegram.sendMessage(ownerId, approved
-        ? `👍 <b>Покупатель одобрил букет</b> · заказ №${order.id}\nМожно отправлять курьера`
-        : `✏️ <b>Покупатель просит изменить букет</b> · заказ №${order.id}\nЖдём комментарий — он придёт в чат`,
-      { parse_mode: 'HTML', ...Markup.inlineKeyboard([ownerButtons]) }).catch(() => {});
+        : [
+            Markup.button.webApp('📬 Открыть чат', adminUrl({ chat: order.user_id })),
+            Markup.button.callback('📸 Новое фото', `photo:${order.id}`),
+          ];
+      await bot.telegram
+        .sendMessage(
+          ownerId,
+          approved
+            ? `👍 <b>Покупатель одобрил букет</b> · заказ №${order.id}\nМожно отправлять курьера`
+            : `✏️ <b>Покупатель просит изменить букет</b> · заказ №${order.id}\nЖдём комментарий — он придёт в чат`,
+          { parse_mode: 'HTML', ...Markup.inlineKeyboard([ownerButtons]) },
+        )
+        .catch(() => {});
     }
     if (approved) return undefined;
     startWaiting(context.from.id, { type: 'ask', orderId: order.id });
-    return context.reply('Напишите, что поправить (цвет, размер, упаковку…) — флорист переделает и пришлёт новое фото 💐');
+    return context.reply(
+      'Напишите, что поправить (цвет, размер, упаковку…) — флорист переделает и пришлёт новое фото 💐',
+    );
   });
 }
 

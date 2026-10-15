@@ -8,11 +8,15 @@ const LARGE_SIZE_FACTOR = 1.4;
 export const sizeState = { sizes: [] }; // [{ name, note, price }]
 
 export function renderSizeRows() {
-  getElement('sizeRows').innerHTML = sizeState.sizes.map((size, sizeIndex) => `
+  getElement('sizeRows').innerHTML = sizeState.sizes
+    .map(
+      (size, sizeIndex) => `
     <div class="srow"><input type="text" value="${escapeHtml(size.name)}" placeholder="M" maxlength="12" data-size-index="${sizeIndex}" data-size-field="name">
       <input type="text" value="${escapeHtml(size.note || '')}" placeholder="напр. 7 цветов, ~35 см" maxlength="40" data-size-index="${sizeIndex}" data-size-field="note">
       <input type="number" value="${size.price || ''}" placeholder="₽" min="1" data-size-index="${sizeIndex}" data-size-field="price">
-      <button type="button" class="x" data-action="remove-size" data-size-index="${sizeIndex}" aria-label="Удалить">✕</button></div>`).join('');
+      <button type="button" class="x" data-action="remove-size" data-size-index="${sizeIndex}" aria-label="Удалить">✕</button></div>`,
+    )
+    .join('');
 }
 
 /** Включили «Есть размеры» у букета без размеров — предлагаем S/M/L от его цены */

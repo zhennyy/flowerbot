@@ -36,7 +36,8 @@ async function addProduct(productData) {
   return createdProduct.id;
 }
 
-const updateProduct = (productId, productData) => database.product.update({ where: { id: productId }, data: productData });
+const updateProduct = (productId, productData) =>
+  database.product.update({ where: { id: productId }, data: productData });
 const deleteProduct = (productId) => database.product.deleteMany({ where: { id: productId } });
 
 // Возвращает, сколько товаров получили фото (0 — такого товара нет)
@@ -56,5 +57,14 @@ async function getLowStock() {
 }
 
 module.exports = {
-  parseProduct, getShowcaseProducts, getAllProducts, findProduct, addProduct, updateProduct, deleteProduct, setProductPhoto, getLowStock, lowStockLimit,
+  parseProduct,
+  getShowcaseProducts,
+  getAllProducts,
+  findProduct,
+  addProduct,
+  updateProduct,
+  deleteProduct,
+  setProductPhoto,
+  getLowStock,
+  lowStockLimit,
 };

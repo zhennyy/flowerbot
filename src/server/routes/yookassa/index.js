@@ -11,7 +11,9 @@ function createYookassaRouter({ bot }) {
   router.post('/yookassa-webhook', paymentNotificationValidator, (request, response) => {
     response.sendStatus(200); // ЮKassa ждёт быстрый ответ; платёж проверяем уже после
     if (!payments.isEnabled()) return;
-    payments.syncPayment(bot, request.validated.paymentId).catch((syncError) => console.error('ЮKassa webhook:', syncError.message));
+    payments
+      .syncPayment(bot, request.validated.paymentId)
+      .catch((syncError) => console.error('ЮKassa webhook:', syncError.message));
   });
 
   return router;

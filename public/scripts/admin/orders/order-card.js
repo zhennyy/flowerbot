@@ -10,9 +10,19 @@ const NEXT_STEP = {
   assembling: ['delivering', 'В доставку'],
   delivering: ['done', 'Доставлен'],
 };
-const STATUS_CLASSES = { new: 's-new', confirmed: 's-conf', assembling: 's-asm', delivering: 's-dlv', done: 's-done', cancelled: 's-cnl' };
+const STATUS_CLASSES = {
+  new: 's-new',
+  confirmed: 's-conf',
+  assembling: 's-asm',
+  delivering: 's-dlv',
+  done: 's-done',
+  cancelled: 's-cnl',
+};
 const PHOTO_STATUS_LABELS = {
-  pending: '⏳ Ждём ответа покупателя', approved: '👍 Покупатель одобрил', changes: '✏️ Просят изменить', auto: '⏰ Не ответил — одобрено автоматически',
+  pending: '⏳ Ждём ответа покупателя',
+  approved: '👍 Покупатель одобрил',
+  changes: '✏️ Просят изменить',
+  auto: '⏰ Не ответил — одобрено автоматически',
 };
 // Фото на согласование можно отправить, пока букет подтверждён или собирается
 const PHOTO_STATUSES = ['confirmed', 'assembling'];
@@ -24,11 +34,15 @@ export const statusName = (statuses, status) => (statuses[status] || '').replace
 // только если покупатель попросил изменить — сначала новое фото
 function primaryButtonHtml(order) {
   const nextStep = NEXT_STEP[order.status];
-  if (order.payment_status === 'pending') return '<span class="done-note">⏳ Ждём оплату — заказ появится «В работе» после оплаты</span>';
-  if (!nextStep) return `<span class="done-note">${order.status === 'done' ? 'Заказ выполнен' : 'Заказ отменён'}</span>`;
+  if (order.payment_status === 'pending')
+    return '<span class="done-note">⏳ Ждём оплату — заказ появится «В работе» после оплаты</span>';
+  if (!nextStep)
+    return `<span class="done-note">${order.status === 'done' ? 'Заказ выполнен' : 'Заказ отменён'}</span>`;
   if (order.status === 'assembling') {
-    if (order.photo_status === 'changes') return `<button class="primary" data-action="pick-bouquet-photo" data-order-id="${order.id}">📸 Новое фото</button>`;
-    if (order.photo_status === 'pending') return `<button class="primary wait" data-action="deliver-without-approval" data-order-id="${order.id}">⏳ Ждём ответа</button>`;
+    if (order.photo_status === 'changes')
+      return `<button class="primary" data-action="pick-bouquet-photo" data-order-id="${order.id}">📸 Новое фото</button>`;
+    if (order.photo_status === 'pending')
+      return `<button class="primary wait" data-action="deliver-without-approval" data-order-id="${order.id}">⏳ Ждём ответа</button>`;
   }
   return `<button class="primary" data-action="set-order-status" data-order-id="${order.id}" data-status="${nextStep[0]}">${nextStep[1]}</button>`;
 }
@@ -45,15 +59,22 @@ function paymentHtml(order) {
 }
 
 // Получатель, открытка, комментарий, отзыв — только то, что есть
-const extrasHtml = (order) => [
-  order.recipient && `<div class="ln"><span class="ic">🎁</span>${escapeHtml(order.recipient)}</div>`,
-  order.card_text && `<div class="ln"><span class="ic">💌</span><i>«${escapeHtml(order.card_text)}»</i></div>`,
-  order.comment && `<div class="ln"><span class="ic">💬</span>${escapeHtml(order.comment)}</div>`,
-  order.rating && `<div class="ln"><span class="ic">⭐</span>${order.rating}/5${order.review_text ? ` — ${escapeHtml(order.review_text)}` : ''}</div>`,
-].filter(Boolean).join('');
+const extrasHtml = (order) =>
+  [
+    order.recipient && `<div class="ln"><span class="ic">🎁</span>${escapeHtml(order.recipient)}</div>`,
+    order.card_text && `<div class="ln"><span class="ic">💌</span><i>«${escapeHtml(order.card_text)}»</i></div>`,
+    order.comment && `<div class="ln"><span class="ic">💬</span>${escapeHtml(order.comment)}</div>`,
+    order.rating &&
+      `<div class="ln"><span class="ic">⭐</span>${order.rating}/5${order.review_text ? ` — ${escapeHtml(order.review_text)}` : ''}</div>`,
+  ]
+    .filter(Boolean)
+    .join('');
 
-const bouquetPhotoHtml = (order) => (order.bouquet_photo ? `<div class="bphoto"><img data-photo="${escapeHtml(order.bouquet_photo)}" alt="Фото букета">
-        <span class="ps ps-${order.photo_status}">${PHOTO_STATUS_LABELS[order.photo_status] || ''}</span></div>` : '');
+const bouquetPhotoHtml = (order) =>
+  order.bouquet_photo
+    ? `<div class="bphoto"><img data-photo="${escapeHtml(order.bouquet_photo)}" alt="Фото букета">
+        <span class="ps ps-${order.photo_status}">${PHOTO_STATUS_LABELS[order.photo_status] || ''}</span></div>`
+    : '';
 
 // Меню «⋯»: новое фото, любой другой статус, отмена
 function moreMenuHtml(order, statuses) {

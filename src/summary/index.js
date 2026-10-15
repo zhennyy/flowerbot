@@ -24,21 +24,34 @@ async function summaryText(isoDate, title) {
   }
   if (dayOrders.length) {
     const dayTotal = dayOrders.reduce((sum, order) => sum + order.total, 0);
-    lines.push('', `Итого: ${dayOrders.length} ${deliveriesWord(dayOrders.length)} на ${dayTotal.toLocaleString('ru-RU')} ₽`);
+    lines.push(
+      '',
+      `Итого: ${dayOrders.length} ${deliveriesWord(dayOrders.length)} на ${dayTotal.toLocaleString('ru-RU')} ₽`,
+    );
   }
   const unreadCount = await countUnread();
   if (unreadCount) lines.push(`💬 Непрочитанных сообщений: ${unreadCount}`);
   const lowStock = await getLowStock();
-  if (lowStock.length) lines.push('', '⚠️ Заканчивается:', ...lowStock.map((product) => `   ${escapeHtml(product.name)} — ${product.stock} шт`));
+  if (lowStock.length)
+    lines.push(
+      '',
+      '⚠️ Заканчивается:',
+      ...lowStock.map((product) => `   ${escapeHtml(product.name)} — ${product.stock} шт`),
+    );
   return lines.join('\n');
 }
 
 // Утренняя сводка в 9:00 по Москве — один раз в день (отметка в настройках summary_sent)
 async function sendMorningSummary(bot) {
   const ownerId = getOwnerId();
-  if (!ownerId || moscowHour() < MORNING_SUMMARY_HOUR || (await getSetting('summary_sent', '')) === moscowDate()) return;
+  if (!ownerId || moscowHour() < MORNING_SUMMARY_HOUR || (await getSetting('summary_sent', '')) === moscowDate())
+    return;
   await setSetting('summary_sent', moscowDate());
-  await bot.telegram.sendMessage(ownerId, await summaryText(moscowDate(), '☀️ Доброе утро! Сегодня'), { parse_mode: 'HTML', ...adminKeyboard() })
+  await bot.telegram
+    .sendMessage(ownerId, await summaryText(moscowDate(), '☀️ Доброе утро! Сегодня'), {
+      parse_mode: 'HTML',
+      ...adminKeyboard(),
+    })
     .catch((sendError) => console.error('Сводка:', sendError.message));
 }
 

@@ -7,7 +7,9 @@ const OWNER_ID = testHelpers.OWNER_ID;
 let shop;
 let buyerCounter = 7400;
 
-before(async () => { shop = await testHelpers.start(); });
+before(async () => {
+  shop = await testHelpers.start();
+});
 
 // Новый заказ с онлайн-оплатой: { order, payment }
 async function orderWithPayment(items = [[2, 1]]) {
@@ -16,7 +18,12 @@ async function orderWithPayment(items = [[2, 1]]) {
   assert.equal(response.status, 200, JSON.stringify(response.body));
   return { buyerId, orderId: response.body.id, payment: testHelpers.lastPayment() };
 }
-const ownerNewOrderNotes = (orderId) => testHelpers.sentTo(OWNER_ID).filter((call) => new RegExp(`Новый заказ!\\n💳 Оплачен онлайн[\\s\\S]*Заказ №${orderId}\\b`).test(testHelpers.textOf(call)));
+const ownerNewOrderNotes = (orderId) =>
+  testHelpers
+    .sentTo(OWNER_ID)
+    .filter((call) =>
+      new RegExp(`Новый заказ!\\n💳 Оплачен онлайн[\\s\\S]*Заказ №${orderId}\\b`).test(testHelpers.textOf(call)),
+    );
 
 test('оплата засчитывается один раз: повтор уведомления ничего не дублирует', async () => {
   const { buyerId, orderId, payment } = await orderWithPayment();
@@ -31,7 +38,9 @@ test('оплата засчитывается один раз: повтор ув
   assert.equal(order.status_msg_id, null, 'сообщение «Оплатить» убрано');
   assert.equal(ownerNewOrderNotes(orderId).length, 1, 'владелица получила заказ ровно один раз');
   assert.match(testHelpers.lastTextTo(buyerId), /оплачен и принят/);
-  assert.ok(testHelpers.telegramCalls.some((call) => call.method === 'deleteMessage' && call.payload.chat_id === buyerId));
+  assert.ok(
+    testHelpers.telegramCalls.some((call) => call.method === 'deleteMessage' && call.payload.chat_id === buyerId),
+  );
 });
 
 test('сумма платежа не совпадает с заказом — оплату не засчитываем', async () => {
@@ -62,7 +71,12 @@ test('платёж другого бота того же магазина ЮKass
 });
 
 test('посторонние и кривые уведомления просто подтверждаются', async () => {
-  const send = (body) => fetch(shop.base + '/yookassa-webhook', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const send = (body) =>
+    fetch(shop.base + '/yookassa-webhook', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
   assert.equal((await send({ event: 'payment.succeeded', object: { id: '../../etc/passwd' } })).status, 200);
   assert.equal((await send({})).status, 200);
   assert.equal((await send({ event: 'payment.succeeded', object: { id: 'unknown-payment' } })).status, 200);
@@ -87,7 +101,10 @@ test('проверка раз в минуту: за 30 минут не опла�
   const { toSqliteTimestamp } = require('../../../database');
   await shop.database.product.update({ where: { id: 11 }, data: { stock: 20 } });
   const { orderId, payment } = await orderWithPayment([[11, 5]]);
-  await shop.database.order.update({ where: { id: orderId }, data: { created_at: toSqliteTimestamp(Date.now() - 31 * 60000) } });
+  await shop.database.order.update({
+    where: { id: orderId },
+    data: { created_at: toSqliteTimestamp(Date.now() - 31 * 60000) },
+  });
   await runPaymentCheck(shop.bot);
   let order = await shop.findOrder(orderId);
   assert.equal(order.status, 'cancelled');

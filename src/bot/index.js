@@ -11,7 +11,9 @@ const { registerOwnerSummaryHandlers } = require('./handlers/owner-summary');
 const { getOwnerId } = require('../owner');
 
 // TELEGRAM_API_ROOT — посредник для Telegram (нужен, если сервер в России)
-const telegramOptions = process.env.TELEGRAM_API_ROOT ? { telegram: { apiRoot: process.env.TELEGRAM_API_ROOT.replace(/\/*$/, '/') } } : {};
+const telegramOptions = process.env.TELEGRAM_API_ROOT
+  ? { telegram: { apiRoot: process.env.TELEGRAM_API_ROOT.replace(/\/*$/, '/') } }
+  : {};
 const bot = new Telegraf(process.env.BOT_TOKEN, telegramOptions);
 
 registerStartHandlers(bot);
@@ -26,7 +28,9 @@ registerOwnerSummaryHandlers(bot);
 registerIncomingMessageHandlers(bot);
 
 // Ошибка в одном обработчике не должна ронять бота целиком
-bot.catch((handlerError, context) => console.error('Ошибка бота:', context?.updateType, handlerError?.message || handlerError));
+bot.catch((handlerError, context) =>
+  console.error('Ошибка бота:', context?.updateType, handlerError?.message || handlerError),
+);
 
 const BUYER_COMMANDS = [
   { command: 'start', description: 'Открыть магазин' },
@@ -44,10 +48,13 @@ const OWNER_COMMANDS = [
 // Кнопка «Магазин» у поля ввода и меню команд
 async function setupMenu() {
   try {
-    await bot.telegram.setChatMenuButton({ menuButton: { type: 'web_app', text: 'Магазин', web_app: { url: process.env.WEBAPP_URL } } });
+    await bot.telegram.setChatMenuButton({
+      menuButton: { type: 'web_app', text: 'Магазин', web_app: { url: process.env.WEBAPP_URL } },
+    });
     await bot.telegram.setMyCommands(BUYER_COMMANDS);
     const ownerId = getOwnerId();
-    if (ownerId) await bot.telegram.setMyCommands(OWNER_COMMANDS, { scope: { type: 'chat', chat_id: Number(ownerId) } });
+    if (ownerId)
+      await bot.telegram.setMyCommands(OWNER_COMMANDS, { scope: { type: 'chat', chat_id: Number(ownerId) } });
   } catch (menuError) {
     console.error('Не удалось настроить меню бота:', menuError.message);
   }
@@ -55,13 +62,15 @@ async function setupMenu() {
 
 // Запуск бота. В Telegraf 4.16 код «после запуска» передаётся колбэком (promise launch() завершается только при остановке бота)
 function launchBot() {
-  bot.launch(async () => {
-    console.log('🤖 Бот запущен');
-    await setupMenu();
-  }).catch((launchError) => {
-    console.error('Бот не запустился:', launchError.message);
-    process.exit(1);
-  });
+  bot
+    .launch(async () => {
+      console.log('🤖 Бот запущен');
+      await setupMenu();
+    })
+    .catch((launchError) => {
+      console.error('Бот не запустился:', launchError.message);
+      process.exit(1);
+    });
 }
 
 module.exports = { bot, launchBot };

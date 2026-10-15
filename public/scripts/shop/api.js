@@ -12,7 +12,11 @@ export function requestShopApi(path, { body, signed = false } = {}) {
     ...(signed ? { 'X-Init-Data': telegramInitData() } : {}),
     'ngrok-skip-browser-warning': '1',
   };
-  return fetch('/api' + path, { method: body ? 'POST' : 'GET', headers, body: body ? JSON.stringify(body) : undefined });
+  return fetch('/api' + path, {
+    method: body ? 'POST' : 'GET',
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  });
 }
 
 /** GET без подписи → JSON (каталог, тарифы доставки, интервалы) */

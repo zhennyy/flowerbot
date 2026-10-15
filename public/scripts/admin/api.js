@@ -13,12 +13,18 @@ export function showAccessDenied(message) {
   document.body.innerHTML = `<div class="denied">🔒<br>${escapeHtml(message || 'Нет доступа')}<br>Откройте админку командой /admin в боте</div>`;
 }
 
-const adminHeaders = () => ({ 'Content-Type': 'application/json', 'X-Init-Data': telegramInitData(), 'ngrok-skip-browser-warning': '1' });
+const adminHeaders = () => ({
+  'Content-Type': 'application/json',
+  'X-Init-Data': telegramInitData(),
+  'ngrok-skip-browser-warning': '1',
+});
 
 /** method: GET (по умолчанию) | POST | PUT | DELETE; body — объект, уйдёт в JSON. Возвращает JSON ответа или бросает Error с текстом */
 export async function callAdminApi(path, { method, body } = {}) {
   const response = await fetch('/api/admin' + path, {
-    method, headers: adminHeaders(), body: body === undefined ? undefined : JSON.stringify(body),
+    method,
+    headers: adminHeaders(),
+    body: body === undefined ? undefined : JSON.stringify(body),
   });
   const data = await response.json().catch(() => ({}));
   if (response.status === 401 || response.status === 403) {
@@ -36,7 +42,9 @@ const photoUrlCache = {};
 export async function loadTelegramPhoto(image) {
   const fileId = image.dataset.photo;
   try {
-    photoUrlCache[fileId] ||= await fetch(`/api/admin/photo/${encodeURIComponent(fileId)}`, { headers: { 'X-Init-Data': telegramInitData(), 'ngrok-skip-browser-warning': '1' } })
+    photoUrlCache[fileId] ||= await fetch(`/api/admin/photo/${encodeURIComponent(fileId)}`, {
+      headers: { 'X-Init-Data': telegramInitData(), 'ngrok-skip-browser-warning': '1' },
+    })
       .then((response) => (response.ok ? response.blob() : Promise.reject()))
       .then((blob) => URL.createObjectURL(blob));
     image.src = photoUrlCache[fileId];
@@ -45,4 +53,5 @@ export async function loadTelegramPhoto(image) {
   }
 }
 
-export const loadTelegramPhotosIn = (container) => container.querySelectorAll('img[data-photo]').forEach(loadTelegramPhoto);
+export const loadTelegramPhotosIn = (container) =>
+  container.querySelectorAll('img[data-photo]').forEach(loadTelegramPhoto);

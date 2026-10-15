@@ -1,129 +1,184 @@
 <!doctype html>
 <html lang="ru">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Флёр — цветочная лавка</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles/theme.css">
-<link rel="stylesheet" href="styles/shop/base.css">
-<link rel="stylesheet" href="styles/shop/catalog.css">
-<link rel="stylesheet" href="styles/shop/product-sheet.css">
-<link rel="stylesheet" href="styles/shop/cart.css">
-<link rel="stylesheet" href="styles/shop/checkout.css">
-<link rel="stylesheet" href="styles/shop/orders.css">
-<link rel="stylesheet" href="styles/shop/desktop.css">
-<script type="module" src="scripts/shop/main.js"></script>
-</head>
-<body>
-<header>
-  <div><div class="brand">Флёр<span>.</span></div>
-  <div class="tagline">Свежие цветы с доставкой за 2 часа</div></div>
-  <div class="hbtns">
-    <button class="hcart" id="hord" data-action="go-to-page" data-page="ordersPage" aria-label="Мои заказы">📦<span class="hbadge" id="obadge" hidden></span></button>
-    <button class="hcart" id="hcart" data-action="go-to-page" data-page="cartPage" aria-label="Корзина">🛒<span class="hbadge" id="hbadge" hidden></span></button>
-  </div>
-</header>
-<div class="search" id="searchBox">🔍<input id="q" placeholder="Розы, тюльпаны, в коробке…" autocomplete="off"><button class="clear" id="clearQ" data-action="clear-search" aria-label="Очистить">✕</button></div>
-<div class="hint" id="hint"></div>
-<nav class="chips" id="chips"></nav>
-<main class="grid" id="grid"></main>
-<button class="cartbar" id="cartbar" data-action="go-to-page" data-page="cartPage"><span id="cartCount"></span><span id="cartSum"></span></button>
-
-<div id="sheetWrap">
-  <div class="sheet-bg" data-action="close-sheet"></div>
-  <div class="sheet" id="sheet"></div>
-</div>
-
-<!-- Экран: корзина -->
-<section class="page" id="cartPage">
-  <div class="page-head"><button class="back" data-action="go-to-page">←</button><h1>Корзина</h1></div>
-  <div id="cartLines"></div>
-  <div id="addonsBox" class="hidden">
-    <div class="addons-title">🎁 Добавить к заказу</div>
-    <div class="addons" id="addons"></div>
-  </div>
-  <div id="cartSummary">
-    <div class="total"><span>Товары</span><span id="cartTotal"></span></div>
-    <div class="sumrow"><span>🚚 Доставка</span><span id="deliveryHint">рассчитаем по адресу</span></div>
-  </div>
-  <div class="cart-empty" id="cartEmpty" hidden><div class="cart-empty-icon">🌿</div>Корзина пока пуста<br>Выберите букет в каталоге
-    <br><button class="big" data-action="go-to-page">Перейти в каталог</button></div>
-  <div class="footer" id="cartFooter"><button class="big" data-action="go-to-page" data-page="checkoutPage">Оформить заказ</button></div>
-</section>
-
-<!-- Экран: мои заказы -->
-<section class="page" id="ordersPage">
-  <div class="page-head"><button class="back" data-action="go-to-page">←</button><h1>Мои заказы</h1></div>
-  <div id="myOrders"><div class="cart-empty">Загружаем… 🌸</div></div>
-</section>
-
-<!-- Экран: оформление -->
-<section class="page" id="checkoutPage">
-  <div class="page-head"><button class="back" data-action="go-to-page" data-page="cartPage">←</button><h1>Оформление</h1></div>
-  <form id="orderForm">
-    <fieldset>
-      <legend>👤 Ваши данные</legend>
-      <label for="f_name">Имя</label><input type="text" id="f_name" maxlength="100" required>
-      <label for="f_phone">Телефон</label><input type="tel" id="f_phone" maxlength="30" placeholder="+7 900 000-00-00" required>
-    </fieldset>
-    <fieldset>
-      <legend>🚚 Доставка</legend>
-      <label>Куда везём</label>
-      <div class="seg" id="zones">
-        <button type="button" class="slot active" data-action="select-zone" data-zone="city">Санкт-Петербург</button>
-        <button type="button" class="slot" data-action="select-zone" data-zone="region">Ленобласть</button>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <title>Флёр — цветочная лавка</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles/theme.css" />
+    <link rel="stylesheet" href="styles/shop/base.css" />
+    <link rel="stylesheet" href="styles/shop/catalog.css" />
+    <link rel="stylesheet" href="styles/shop/product-sheet.css" />
+    <link rel="stylesheet" href="styles/shop/cart.css" />
+    <link rel="stylesheet" href="styles/shop/checkout.css" />
+    <link rel="stylesheet" href="styles/shop/orders.css" />
+    <link rel="stylesheet" href="styles/shop/desktop.css" />
+    <script type="module" src="scripts/shop/main.js"></script>
+  </head>
+  <body>
+    <header>
+      <div>
+        <div class="brand">Флёр<span>.</span></div>
+        <div class="tagline">Свежие цветы с доставкой за 2 часа</div>
       </div>
-      <label for="f_address">Адрес</label>
-      <textarea id="f_address" maxlength="300" placeholder="Улица, дом, квартира, подъезд, этаж" required></textarea>
-      <div class="quote hidden" id="quote"></div>
-      <label>Дата</label>
-      <div class="days" id="days"></div>
-      <input type="date" id="f_date" required>
-      <label>Время</label>
-      <div class="slots" id="slots"></div>
-      <div class="closed" id="slotsNote"></div>
-      <label class="toggle"><input type="checkbox" id="t_recipient"> Получатель — другой человек</label>
-      <div id="recipientBox" class="hidden">
-        <label for="f_recipient">Имя и телефон получателя</label>
-        <input type="text" id="f_recipient" maxlength="100" placeholder="Анна, +7 900 …">
+      <div class="hbtns">
+        <button class="hcart" id="hord" data-action="go-to-page" data-page="ordersPage" aria-label="Мои заказы">
+          📦<span class="hbadge" id="obadge" hidden></span>
+        </button>
+        <button class="hcart" id="hcart" data-action="go-to-page" data-page="cartPage" aria-label="Корзина">
+          🛒<span class="hbadge" id="hbadge" hidden></span>
+        </button>
       </div>
-    </fieldset>
-    <fieldset id="payBox">
-      <legend>💳 Оплата</legend>
-      <div class="paym on" id="payOnline">
-        <div class="pm-ic">💳</div>
-        <div><b>Картой онлайн</b><div class="pm-sub">Банковская карта или СБП через ЮKassa. Безопасно — данные карты вводятся на странице банка</div></div>
-        <span class="pm-ok">✓</span>
-      </div>
-      <div class="pm-steps" id="payNote">Следующий шаг — кнопка «Оплатить», откроется защищённая страница ЮKassa. Как только оплата пройдёт, флорист возьмётся за букет, а подтверждение придёт в чат 🌷</div>
-    </fieldset>
-    <fieldset>
-      <legend>💌 Открытка</legend>
-      <label class="toggle"><input type="checkbox" id="t_card"> Добавить открытку (бесплатно)</label>
-      <div id="cardBox" class="hidden">
-        <label for="f_card">Текст открытки</label>
-        <textarea id="f_card" maxlength="300" placeholder="С днём рождения! Пусть каждый день будет как этот букет 🌷"></textarea>
-        <div class="counter"><span id="cardCount">0</span>/300</div>
-      </div>
-      <label for="f_comment">Комментарий к заказу</label>
-      <input type="text" id="f_comment" maxlength="300" placeholder="Например: позвонить за 30 минут">
-    </fieldset>
-    <div class="error" id="formError"></div>
-  </form>
-  <div class="footer"><button class="big" id="submitBtn" form="orderForm">Заказать</button></div>
-</section>
+    </header>
+    <div class="search" id="searchBox">
+      🔍<input id="q" placeholder="Розы, тюльпаны, в коробке…" autocomplete="off" /><button
+        class="clear"
+        id="clearQ"
+        data-action="clear-search"
+        aria-label="Очистить"
+      >
+        ✕
+      </button>
+    </div>
+    <div class="hint" id="hint"></div>
+    <nav class="chips" id="chips"></nav>
+    <main class="grid" id="grid"></main>
+    <button class="cartbar" id="cartbar" data-action="go-to-page" data-page="cartPage">
+      <span id="cartCount"></span><span id="cartSum"></span>
+    </button>
 
-<!-- Экран: спасибо -->
-<section class="page" id="donePage">
-  <div class="done">
-    <div class="flower">💐</div>
-    <h1 id="doneTitle">Заказ принят!</h1>
-    <p id="doneText">Подтверждение уже в чате с ботом.<br>Мы свяжемся с вами в ближайшее время.</p>
-    <br><button class="big hidden" id="payBtn" data-action="pay-new-order">💳 Оплатить</button>
-    <button class="big" id="backBtn" data-action="go-to-page">Вернуться в каталог</button>
-  </div>
-</section>
-</body>
+    <div id="sheetWrap">
+      <div class="sheet-bg" data-action="close-sheet"></div>
+      <div class="sheet" id="sheet"></div>
+    </div>
+
+    <!-- Экран: корзина -->
+    <section class="page" id="cartPage">
+      <div class="page-head">
+        <button class="back" data-action="go-to-page">←</button>
+        <h1>Корзина</h1>
+      </div>
+      <div id="cartLines"></div>
+      <div id="addonsBox" class="hidden">
+        <div class="addons-title">🎁 Добавить к заказу</div>
+        <div class="addons" id="addons"></div>
+      </div>
+      <div id="cartSummary">
+        <div class="total"><span>Товары</span><span id="cartTotal"></span></div>
+        <div class="sumrow"><span>🚚 Доставка</span><span id="deliveryHint">рассчитаем по адресу</span></div>
+      </div>
+      <div class="cart-empty" id="cartEmpty" hidden>
+        <div class="cart-empty-icon">🌿</div>
+        Корзина пока пуста<br />Выберите букет в каталоге <br /><button class="big" data-action="go-to-page">
+          Перейти в каталог
+        </button>
+      </div>
+      <div class="footer" id="cartFooter">
+        <button class="big" data-action="go-to-page" data-page="checkoutPage">Оформить заказ</button>
+      </div>
+    </section>
+
+    <!-- Экран: мои заказы -->
+    <section class="page" id="ordersPage">
+      <div class="page-head">
+        <button class="back" data-action="go-to-page">←</button>
+        <h1>Мои заказы</h1>
+      </div>
+      <div id="myOrders"><div class="cart-empty">Загружаем… 🌸</div></div>
+    </section>
+
+    <!-- Экран: оформление -->
+    <section class="page" id="checkoutPage">
+      <div class="page-head">
+        <button class="back" data-action="go-to-page" data-page="cartPage">←</button>
+        <h1>Оформление</h1>
+      </div>
+      <form id="orderForm">
+        <fieldset>
+          <legend>👤 Ваши данные</legend>
+          <label for="f_name">Имя</label><input type="text" id="f_name" maxlength="100" required />
+          <label for="f_phone">Телефон</label
+          ><input type="tel" id="f_phone" maxlength="30" placeholder="+7 900 000-00-00" required />
+        </fieldset>
+        <fieldset>
+          <legend>🚚 Доставка</legend>
+          <label>Куда везём</label>
+          <div class="seg" id="zones">
+            <button type="button" class="slot active" data-action="select-zone" data-zone="city">
+              Санкт-Петербург
+            </button>
+            <button type="button" class="slot" data-action="select-zone" data-zone="region">Ленобласть</button>
+          </div>
+          <label for="f_address">Адрес</label>
+          <textarea
+            id="f_address"
+            maxlength="300"
+            placeholder="Улица, дом, квартира, подъезд, этаж"
+            required
+          ></textarea>
+          <div class="quote hidden" id="quote"></div>
+          <label>Дата</label>
+          <div class="days" id="days"></div>
+          <input type="date" id="f_date" required />
+          <label>Время</label>
+          <div class="slots" id="slots"></div>
+          <div class="closed" id="slotsNote"></div>
+          <label class="toggle"><input type="checkbox" id="t_recipient" /> Получатель — другой человек</label>
+          <div id="recipientBox" class="hidden">
+            <label for="f_recipient">Имя и телефон получателя</label>
+            <input type="text" id="f_recipient" maxlength="100" placeholder="Анна, +7 900 …" />
+          </div>
+        </fieldset>
+        <fieldset id="payBox">
+          <legend>💳 Оплата</legend>
+          <div class="paym on" id="payOnline">
+            <div class="pm-ic">💳</div>
+            <div>
+              <b>Картой онлайн</b>
+              <div class="pm-sub">
+                Банковская карта или СБП через ЮKassa. Безопасно — данные карты вводятся на странице банка
+              </div>
+            </div>
+            <span class="pm-ok">✓</span>
+          </div>
+          <div class="pm-steps" id="payNote">
+            Следующий шаг — кнопка «Оплатить», откроется защищённая страница ЮKassa. Как только оплата пройдёт, флорист
+            возьмётся за букет, а подтверждение придёт в чат 🌷
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>💌 Открытка</legend>
+          <label class="toggle"><input type="checkbox" id="t_card" /> Добавить открытку (бесплатно)</label>
+          <div id="cardBox" class="hidden">
+            <label for="f_card">Текст открытки</label>
+            <textarea
+              id="f_card"
+              maxlength="300"
+              placeholder="С днём рождения! Пусть каждый день будет как этот букет 🌷"
+            ></textarea>
+            <div class="counter"><span id="cardCount">0</span>/300</div>
+          </div>
+          <label for="f_comment">Комментарий к заказу</label>
+          <input type="text" id="f_comment" maxlength="300" placeholder="Например: позвонить за 30 минут" />
+        </fieldset>
+        <div class="error" id="formError"></div>
+      </form>
+      <div class="footer"><button class="big" id="submitBtn" form="orderForm">Заказать</button></div>
+    </section>
+
+    <!-- Экран: спасибо -->
+    <section class="page" id="donePage">
+      <div class="done">
+        <div class="flower">💐</div>
+        <h1 id="doneTitle">Заказ принят!</h1>
+        <p id="doneText">Подтверждение уже в чате с ботом.<br />Мы свяжемся с вами в ближайшее время.</p>
+        <br /><button class="big hidden" id="payBtn" data-action="pay-new-order">💳 Оплатить</button>
+        <button class="big" id="backBtn" data-action="go-to-page">Вернуться в каталог</button>
+      </div>
+    </section>
+  </body>
 </html>

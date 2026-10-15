@@ -10,10 +10,19 @@ const USER_ORDERS_LIMIT = 10;
 async function sendMyOrders(context) {
   const latestOrders = (await getUserOrders(context.from.id, USER_ORDERS_LIMIT)).slice(0, ORDERS_IN_CHAT);
   if (!latestOrders.length) {
-    return context.reply('У вас пока нет заказов 🌿', Markup.inlineKeyboard([Markup.button.webApp('💐 Открыть магазин', shopUrl())]));
+    return context.reply(
+      'У вас пока нет заказов 🌿',
+      Markup.inlineKeyboard([Markup.button.webApp('💐 Открыть магазин', shopUrl())]),
+    );
   }
-  for (const order of latestOrders.reverse()) { // старые сверху, свежий — последним, у поля ввода
-    const keyboard = [[Markup.button.webApp('🔁 Повторить', shopUrl({ repeat: order.id })), Markup.button.callback('💬 Вопрос', `ask:${order.id}`)]];
+  for (const order of latestOrders.reverse()) {
+    // старые сверху, свежий — последним, у поля ввода
+    const keyboard = [
+      [
+        Markup.button.webApp('🔁 Повторить', shopUrl({ repeat: order.id })),
+        Markup.button.callback('💬 Вопрос', `ask:${order.id}`),
+      ],
+    ];
     await context.reply(orderText(order), { parse_mode: 'HTML', ...Markup.inlineKeyboard(keyboard) });
   }
   return undefined;

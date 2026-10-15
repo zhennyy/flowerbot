@@ -36,13 +36,17 @@ async function priceItems(cartItems) {
   }
   // Хватает ли остатка (с учётом того, что один букет может быть в корзине в разных размерах)
   const quantityByProduct = new Map();
-  for (const orderItem of orderItems) quantityByProduct.set(orderItem.id, (quantityByProduct.get(orderItem.id) || 0) + orderItem.qty);
+  for (const orderItem of orderItems)
+    quantityByProduct.set(orderItem.id, (quantityByProduct.get(orderItem.id) || 0) + orderItem.qty);
   for (const [productId, totalQuantity] of quantityByProduct) {
     const product = await findProduct(productId);
     if (!product.unit && totalQuantity > MAX_PER_ITEM) {
-      throw userError(`«${product.name}»: в одном заказе до ${MAX_PER_ITEM} шт. Для большего заказа напишите флористу 💐`);
+      throw userError(
+        `«${product.name}»: в одном заказе до ${MAX_PER_ITEM} шт. Для большего заказа напишите флористу 💐`,
+      );
     }
-    if (product.stock != null && product.stock < totalQuantity) throw userError(`«${product.name}»: осталось только ${product.stock} шт`);
+    if (product.stock != null && product.stock < totalQuantity)
+      throw userError(`«${product.name}»: осталось только ${product.stock} шт`);
   }
   if (!orderItems.length) throw userError('Корзина пуста');
   return orderItems;

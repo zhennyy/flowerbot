@@ -26,7 +26,8 @@ function checkInitData(initData, botToken = process.env.BOT_TOKEN) {
 
   const expectedBuffer = Buffer.from(expectedHash, 'hex');
   const receivedBuffer = Buffer.from(receivedHash, 'hex');
-  if (expectedBuffer.length !== receivedBuffer.length || !crypto.timingSafeEqual(expectedBuffer, receivedBuffer)) return null;
+  if (expectedBuffer.length !== receivedBuffer.length || !crypto.timingSafeEqual(expectedBuffer, receivedBuffer))
+    return null;
 
   const authDate = Number(parameters.get('auth_date'));
   if (!authDate || Date.now() / 1000 - authDate > INIT_DATA_MAX_AGE_SECONDS) return null;
@@ -59,7 +60,8 @@ function ownerAuth(request, response, next) {
 // Простой счётчик в памяти: ключ → время последних запросов. Больше max за windowMs — ответ 429 с message.
 function createRateLimit({ max, windowMs, key, message }) {
   const requestTimesByKey = new Map();
-  setInterval(() => { // раз в минуту убираем старые записи, чтобы память не росла
+  setInterval(() => {
+    // раз в минуту убираем старые записи, чтобы память не росла
     const now = Date.now();
     for (const [trackedKey, requestTimes] of requestTimesByKey) {
       const freshTimes = requestTimes.filter((requestTime) => now - requestTime < windowMs);

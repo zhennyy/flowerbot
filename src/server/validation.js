@@ -26,10 +26,14 @@ const parsePositiveId = (value) => {
   const parsedId = Number(value);
   return Number.isSafeInteger(parsedId) && parsedId > 0 ? parsedId : 0;
 };
-const cleanText = (value, maxLength) => String(value ?? '').trim().slice(0, maxLength);
+const cleanText = (value, maxLength) =>
+  String(value ?? '')
+    .trim()
+    .slice(0, maxLength);
 const isIsoDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value);
 
 // :id в адресе → request.validated[fieldName] (0, если не число — маршрут ответит «не найдено»)
-const idParamValidator = (fieldName, parameterName = 'id') => createValidator((request) => ({ [fieldName]: parsePositiveId(request.params[parameterName]) }));
+const idParamValidator = (fieldName, parameterName = 'id') =>
+  createValidator((request) => ({ [fieldName]: parsePositiveId(request.params[parameterName]) }));
 
 module.exports = { ValidationError, createValidator, parsePositiveId, cleanText, isIsoDate, idParamValidator };

@@ -4,7 +4,12 @@ import { getElement, escapeHtml } from '../../shared/dom.js';
 import { vibrateSelection } from '../../shared/telegram.js';
 import { matchesSearch, highlightMatches } from './search.js';
 import {
-  showcaseProducts, isSoldByStem, hasSizes, productPhotoHtml, priceLabel, lowStockBadge,
+  showcaseProducts,
+  isSoldByStem,
+  hasSizes,
+  productPhotoHtml,
+  priceLabel,
+  lowStockBadge,
 } from './product-helpers.js';
 import { quantityInCart } from '../cart/cart-model.js';
 
@@ -13,13 +18,19 @@ export const LOAD_ERROR_GRID_HTML = '<div class="empty">Не удалось за
 
 export function renderChips() {
   const found = showcaseProducts().filter(matchesSearch);
-  const countIn = (category) => (category === ALL_CATEGORIES ? found.length : found.filter((product) => product.category === category).length);
-  getElement('chips').innerHTML = [ALL_CATEGORIES, ...state.categories].map((category) => {
-    const count = countIn(category);
-    return `<button class="chip ${category === state.activeCategory ? 'active' : ''} ${state.searchQuery && !count ? 'zero' : ''}" data-action="select-category" data-category="${escapeHtml(category)}">${escapeHtml(category)}${state.searchQuery ? `<span class="n">${count}</span>` : ''}</button>`;
-  }).join('');
+  const countIn = (category) =>
+    category === ALL_CATEGORIES ? found.length : found.filter((product) => product.category === category).length;
+  getElement('chips').innerHTML = [ALL_CATEGORIES, ...state.categories]
+    .map((category) => {
+      const count = countIn(category);
+      return `<button class="chip ${category === state.activeCategory ? 'active' : ''} ${state.searchQuery && !count ? 'zero' : ''}" data-action="select-category" data-category="${escapeHtml(category)}">${escapeHtml(category)}${state.searchQuery ? `<span class="n">${count}</span>` : ''}</button>`;
+    })
+    .join('');
   // Подсказка: сколько нашлось и в каких категориях
-  if (!state.searchQuery) { getElement('hint').innerHTML = ''; return; }
+  if (!state.searchQuery) {
+    getElement('hint').innerHTML = '';
+    return;
+  }
   const categoriesWithResults = state.categories.filter((category) => countIn(category));
   getElement('hint').innerHTML = found.length
     ? `Нашлось <b>${found.length}</b> — в категориях: ${categoriesWithResults.map(escapeHtml).join(', ')}`
@@ -27,7 +38,11 @@ export function renderChips() {
 }
 
 /** −N+ для строки корзины и допов; клик между кнопками не открывает карточку товара */
-export const quantityStepperHtml = (key, quantity, extraClass = '') => `<div class="qty${extraClass}" data-action="ignore-click">
+export const quantityStepperHtml = (
+  key,
+  quantity,
+  extraClass = '',
+) => `<div class="qty${extraClass}" data-action="ignore-click">
       <button data-action="change-quantity" data-key="${key}" data-delta="-1">−</button>${quantity}<button data-action="change-quantity" data-key="${key}" data-delta="1">+</button></div>`;
 
 // Кнопки на карточке каталога: поштучные и букеты с размерами открывают выбор в шторке, остальные — сразу в корзину
@@ -44,9 +59,14 @@ function cardControlsHtml(product) {
 }
 
 export function renderGrid() {
-  const visibleProducts = showcaseProducts()
-    .filter((product) => (state.activeCategory === ALL_CATEGORIES || product.category === state.activeCategory) && matchesSearch(product));
-  getElement('grid').innerHTML = visibleProducts.length ? visibleProducts.map((product) => `
+  const visibleProducts = showcaseProducts().filter(
+    (product) =>
+      (state.activeCategory === ALL_CATEGORIES || product.category === state.activeCategory) && matchesSearch(product),
+  );
+  getElement('grid').innerHTML = visibleProducts.length
+    ? visibleProducts
+        .map(
+          (product) => `
     <article class="card" data-action="open-product" data-product-id="${product.id}">
       <div class="pic" style="background:${escapeHtml(product.bg)}">${productPhotoHtml(product)}${product.badge ? `<span class="badge">${escapeHtml(product.badge)}</span>` : ''}${lowStockBadge(product)}</div>
       <div class="info">
@@ -54,7 +74,9 @@ export function renderGrid() {
         <div class="desc">${highlightMatches(product.description)}</div>
         <div class="row"><span class="price">${priceLabel(product)}</span>${cardControlsHtml(product)}</div>
       </div>
-    </article>`).join('')
+    </article>`,
+        )
+        .join('')
     : '<div class="empty">Ничего не нашлось 🌿<br>Попробуйте «розы», «коробка» или «тюльпаны»<br><button data-action="clear-search">Показать все букеты</button></div>';
 }
 
@@ -77,8 +99,11 @@ export function listenToSearchInput() {
     state.searchQuery = event.target.value.trim();
     getElement('searchBox').classList.toggle('has-text', Boolean(state.searchQuery));
     // Если в выбранной категории ничего нет, а в других есть — показываем «Все»
-    const categoryHasResults = showcaseProducts().some((product) => product.category === state.activeCategory && matchesSearch(product));
-    if (state.searchQuery && state.activeCategory !== ALL_CATEGORIES && !categoryHasResults) state.activeCategory = ALL_CATEGORIES;
+    const categoryHasResults = showcaseProducts().some(
+      (product) => product.category === state.activeCategory && matchesSearch(product),
+    );
+    if (state.searchQuery && state.activeCategory !== ALL_CATEGORIES && !categoryHasResults)
+      state.activeCategory = ALL_CATEGORIES;
     renderChips();
     renderGrid();
   });

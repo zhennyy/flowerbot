@@ -12,24 +12,40 @@ export async function loadChats() {
     getElement('chatCount').hidden = !unread;
     getElement('chatCount').textContent = unread;
     if (!getElement('chatsView').hidden) renderChats();
-  } catch { /* счётчик обновится при следующем опросе */ }
+  } catch {
+    /* счётчик обновится при следующем опросе */
+  }
 }
 
 // Сегодняшнее сообщение — время, более раннее — дата
-const lastMessageTime = (chat) => (dayOf(chat.created_at) === dayOf(nowAsDatabaseTime()) ? timeOf(chat.created_at) : dayOf(chat.created_at));
+const lastMessageTime = (chat) =>
+  dayOf(chat.created_at) === dayOf(nowAsDatabaseTime()) ? timeOf(chat.created_at) : dayOf(chat.created_at);
 
 export function renderChats() {
-  getElement('chatList').innerHTML = chatState.chats.length ? chatState.chats.map((chat) => `
+  getElement('chatList').innerHTML = chatState.chats.length
+    ? chatState.chats
+        .map(
+          (chat) => `
     <div class="card chat ${chat.unread ? 'unread' : ''}" data-action="open-chat" data-user-id="${chat.user_id}">
       <div class="ava">${escapeHtml((chat.name || '?')[0].toUpperCase())}</div>
       <div class="mid"><div class="nm"><span>${escapeHtml(chat.name || 'Покупатель')}</span><small>${lastMessageTime(chat)}</small></div>
         <div class="last">${chat.direction === 'out' ? 'Вы: ' : ''}${chat.photo ? '📷 Фото ' : ''}${escapeHtml(chat.text || '')}</div></div>
       ${chat.unread ? `<span class="dot">${chat.unread}</span>` : ''}
-    </div>`).join('') : '<div class="empty">Сообщений пока нет 🌿<br>Когда покупатель напишет боту, диалог появится здесь</div>';
+    </div>`,
+        )
+        .join('')
+    : '<div class="empty">Сообщений пока нет 🌿<br>Когда покупатель напишет боту, диалог появится здесь</div>';
 }
 
 /** Диалога с покупателем ещё нет (он не писал) — добавляем пустой в начало списка, чтобы открыть переписку из заказа */
 export function ensureChatExists(order) {
   if (chatState.chats.some((chat) => chat.user_id === order.user_id)) return;
-  chatState.chats.unshift({ user_id: order.user_id, name: order.customer_name, username: order.username, text: '', created_at: nowAsDatabaseTime(), unread: 0 });
+  chatState.chats.unshift({
+    user_id: order.user_id,
+    name: order.customer_name,
+    username: order.username,
+    text: '',
+    created_at: nowAsDatabaseTime(),
+    unread: 0,
+  });
 }

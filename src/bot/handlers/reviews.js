@@ -19,15 +19,20 @@ function registerReviewHandlers(bot) {
     await context.editMessageText(`Ваша оценка заказа №${order.id}: ${stars(rating)}`).catch(() => {});
     const ownerId = getOwnerId();
     if (ownerId) {
-      bot.telegram.sendMessage(ownerId, `${stars(rating)} Оценка к заказу №${order.id} от ${escapeHtml(order.customer_name)}`, { parse_mode: 'HTML' }).catch(() => {});
+      bot.telegram
+        .sendMessage(ownerId, `${stars(rating)} Оценка к заказу №${order.id} от ${escapeHtml(order.customer_name)}`, {
+          parse_mode: 'HTML',
+        })
+        .catch(() => {});
     }
     if (rating <= LOW_RATING) {
       startWaiting(context.from.id, { type: 'review', orderId: order.id });
       return context.reply('Нам очень жаль 😔 Расскажите, что пошло не так — флорист обязательно прочитает');
     }
-    return context.reply('Спасибо! Будем рады порадовать вас снова 💐', Markup.inlineKeyboard([
-      [Markup.button.webApp('🔁 Повторить заказ', shopUrl({ repeat: order.id }))],
-    ]));
+    return context.reply(
+      'Спасибо! Будем рады порадовать вас снова 💐',
+      Markup.inlineKeyboard([[Markup.button.webApp('🔁 Повторить заказ', shopUrl({ repeat: order.id }))]]),
+    );
   });
 }
 

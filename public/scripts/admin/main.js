@@ -28,7 +28,9 @@ const TABS = {
 
 function switchTab(tabName) {
   document.querySelectorAll('.tab').forEach((tab) => tab.classList.toggle('active', tab.dataset.tab === tabName));
-  Object.entries(TABS).forEach(([name, { view }]) => { getElement(view).hidden = name !== tabName; });
+  Object.entries(TABS).forEach(([name, { view }]) => {
+    getElement(view).hidden = name !== tabName;
+  });
   TABS[tabName].load();
 }
 
@@ -43,8 +45,15 @@ function startPolling() {
 
 initTelegram();
 [
-  orderListActions, orderActions, chatActions, productListActions, productEditorActions, sizeActions,
-  statsActions, deliveryTariffActions, calendarActions,
+  orderListActions,
+  orderActions,
+  chatActions,
+  productListActions,
+  productEditorActions,
+  sizeActions,
+  statsActions,
+  deliveryTariffActions,
+  calendarActions,
   { 'switch-tab': (element) => switchTab(element.dataset.tab) },
 ].forEach(registerClickActions);
 listenForClickActions();
@@ -59,7 +68,8 @@ startPolling();
 if (!telegramInitData()) showAccessDenied('Админка открывается только из Telegram');
 else {
   const chatUserId = new URLSearchParams(window.location.search).get('chat');
-  if (chatUserId) { // открыли из уведомления «📬 Открыть чат»
+  if (chatUserId) {
+    // открыли из уведомления «📬 Открыть чат»
     switchTab('chats');
     loadChats().then(() => openThread(Number(chatUserId)));
   } else {

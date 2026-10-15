@@ -13,7 +13,12 @@ const closeEditor = (page) => page.locator('#sheetWrap .sheet-bg').click({ posit
 async function runOrderScreens(runner, page, shop) {
   const { snap, check } = runner;
   await snap(page, 'o01-orders');
-  for (const [label, screen] of [['Новые', 'o02-orders-new'], ['Сегодня', 'o03-orders-today'], ['Завтра', 'o04-orders-tomorrow'], ['Все', 'o05-orders-all']]) {
+  for (const [label, screen] of [
+    ['Новые', 'o02-orders-new'],
+    ['Сегодня', 'o03-orders-today'],
+    ['Завтра', 'o04-orders-tomorrow'],
+    ['Все', 'o05-orders-all'],
+  ]) {
     await page.locator('#orderFilters .f', { hasText: label }).click();
     await snap(page, screen);
   }
@@ -33,7 +38,10 @@ async function runOrderScreens(runner, page, shop) {
   await orderCard(page, 4).locator('.primary', { hasText: 'Ждём ответа' }).click();
   await runner.settle(page);
   const confirms = (await telegramLog(page)).confirms;
-  check('«Ждём ответа» спрашивает подтверждение и отправляет в доставку', /без одобрения/.test(confirms.at(-1)) && (await shop.findOrder(4)).status === 'delivering');
+  check(
+    '«Ждём ответа» спрашивает подтверждение и отправляет в доставку',
+    /без одобрения/.test(confirms.at(-1)) && (await shop.findOrder(4)).status === 'delivering',
+  );
 }
 
 async function runChatScreens(runner, page) {
@@ -50,7 +58,11 @@ async function runChatScreens(runner, page) {
   await page.locator('#sendBtn').click();
   await page.waitForFunction(() => document.querySelectorAll('#msgs .bubble.out').length === 3);
   const sent = helpers.sentTo(SECOND_BUYER_ID).at(-1);
-  check('ответ покупателю отправлен с привязкой к заказу', /Курьер выехал/.test(helpers.textOf(sent)) && /№5/.test(helpers.textOf(sent)), helpers.textOf(sent));
+  check(
+    'ответ покупателю отправлен с привязкой к заказу',
+    /Курьер выехал/.test(helpers.textOf(sent)) && /№5/.test(helpers.textOf(sent)),
+    helpers.textOf(sent),
+  );
   await pressBackButton(page);
   check('«Назад» Telegram закрывает переписку', await page.locator('#thread').isHidden());
 }
@@ -108,16 +120,27 @@ async function runDeliveryScreens(runner, page, shop) {
   await snap(page, 'o21-delivery-edited');
   await page.locator('#deliveryView .big', { hasText: 'Сохранить тарифы' }).click();
   await runner.settle(page);
-  const tariff = (await shop.call(OWNER_ID, 'GET', '/api/admin/delivery', undefined, { 'X-Forwarded-For': '10.1.0.2' })).body;
-  check('тарифы сохранены: новая зона и базовая цена Ленобласти', tariff.city.length === 6 && tariff.region.base === 1090, JSON.stringify(tariff));
+  const tariff = (await shop.call(OWNER_ID, 'GET', '/api/admin/delivery', undefined, { 'X-Forwarded-For': '10.1.0.2' }))
+    .body;
+  check(
+    'тарифы сохранены: новая зона и базовая цена Ленобласти',
+    tariff.city.length === 6 && tariff.region.base === 1090,
+    JSON.stringify(tariff),
+  );
   await page.locator('#deliveryView .big', { hasText: 'Сохранить календарь' }).click();
   await runner.settle(page);
-  const calendar = (await shop.call(OWNER_ID, 'GET', '/api/admin/calendar', undefined, { 'X-Forwarded-For': '10.1.0.2' })).body;
+  const calendar = (
+    await shop.call(OWNER_ID, 'GET', '/api/admin/calendar', undefined, { 'X-Forwarded-For': '10.1.0.2' })
+  ).body;
   check('выходной день сохранён', calendar.closed.includes(moscowDate(3)), JSON.stringify(calendar));
   await page.fill('#ph_timeout', '30');
   await page.locator('#deliveryView .big', { hasText: /^Сохранить$/ }).click();
   await runner.settle(page);
-  check('срок согласования фото сохранён', /30 мин/.test((await telegramLog(page)).alerts.at(-1)), (await telegramLog(page)).alerts.at(-1));
+  check(
+    'срок согласования фото сохранён',
+    /30 мин/.test((await telegramLog(page)).alerts.at(-1)),
+    (await telegramLog(page)).alerts.at(-1),
+  );
 }
 
 async function runOwnerScreens(runner, shop) {
@@ -130,14 +153,24 @@ async function runOwnerScreens(runner, shop) {
   await runDeliveryScreens(runner, page, shop);
   await page.context().close();
 
-  const dark = await openPage(OWNER_ID, { pagePath: ADMIN, name: 'owner-dark', colorScheme: 'dark', waitFor: '#orders .ord' });
+  const dark = await openPage(OWNER_ID, {
+    pagePath: ADMIN,
+    name: 'owner-dark',
+    colorScheme: 'dark',
+    waitFor: '#orders .ord',
+  });
   await snap(dark, 'o22-orders-dark');
   await tab(dark, 'Статистика').click();
   await dark.waitForSelector('#kpis .kpi');
   await snap(dark, 'o23-stats-dark');
   await dark.context().close();
 
-  const desktop = await openPage(OWNER_ID, { pagePath: ADMIN, name: 'owner-desktop', viewport: DESKTOP_VIEWPORT, waitFor: '#orders .ord' });
+  const desktop = await openPage(OWNER_ID, {
+    pagePath: ADMIN,
+    name: 'owner-desktop',
+    viewport: DESKTOP_VIEWPORT,
+    waitFor: '#orders .ord',
+  });
   await snap(desktop, 'o24-orders-desktop');
   await tab(desktop, 'Букеты').click();
   await desktop.waitForSelector('#products .prod');

@@ -17,8 +17,16 @@ import { repeatOrderActions, repeatOrder } from './orders/repeat-order.js';
 initTelegram();
 // каждый модуль отдаёт свои действия для data-action; совпадение имён registerClickActions не пропустит
 [
-  catalogActions, productSheetActions, stemSheetActions, cartActions, navigationActions,
-  deliveryQuoteActions, checkoutFormActions, submitOrderActions, myOrdersActions, repeatOrderActions,
+  catalogActions,
+  productSheetActions,
+  stemSheetActions,
+  cartActions,
+  navigationActions,
+  deliveryQuoteActions,
+  checkoutFormActions,
+  submitOrderActions,
+  myOrdersActions,
+  repeatOrderActions,
 ].forEach(registerClickActions);
 listenForClickActions();
 trackTaps();

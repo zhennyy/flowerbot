@@ -1,35 +1,195 @@
 /* Оформление заказа: форма, дата и интервалы, доставка, оплата, открытка; экран «Спасибо» */
-form{padding:0 16px}
-fieldset{border:0;background:var(--card);border-radius:18px;padding:14px;margin:12px 0;box-shadow:var(--shadow)}
-legend{font-weight:600;font-size:15px;padding:0;float:left;width:100%;margin-bottom:10px}
-label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px;clear:both}
-input[type=text],input[type=tel],input[type=date],textarea{width:100%;border:1px solid var(--line);background:var(--bg);
-  border-radius:12px;padding:11px 12px;outline:0}
-input:focus,textarea:focus{border-color:var(--accent)}
-textarea{resize:none;min-height:70px}
-.slots{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.slot{border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:10px;cursor:pointer;font-size:14px}
-.slot.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
-.slot:disabled{opacity:.35;cursor:default}
-.days{display:flex;gap:8px;margin-bottom:8px}
-.toggle{display:flex;align-items:center;gap:10px;color:var(--text);font-size:14px;cursor:pointer;margin:6px 0 0}
-.toggle input{width:18px;height:18px;accent-color:var(--accent)}
-.counter{text-align:right;font-size:12px;color:var(--muted);margin-top:4px}
-.error{color:var(--danger);font-size:14px;margin:8px 0;min-height:1em;text-align:center}
-.paym{display:flex;gap:12px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--bg)}
-.paym.on{border-color:var(--accent);background:var(--accent-soft)}
-.pm-ic{font-size:26px;flex:none} .pm-sub{color:var(--muted);font-size:12.5px;margin-top:2px;line-height:1.35}
-.pm-ok{margin-left:auto;color:var(--accent);font-weight:700;font-size:18px}
-.pm-steps{color:var(--muted);font-size:12.5px;line-height:1.45;margin-top:10px}
-.slot small{display:block;font-size:11px;opacity:.8}
-.closed{color:var(--danger);font-size:14px;margin-top:8px}
-.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.quote{margin-top:10px;border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.45;background:var(--accent-soft)}
-.quote.err{background:transparent;border:1px dashed var(--danger);color:var(--danger)}
-.quote small{color:var(--muted);display:block}
+form {
+  padding: 0 16px;
+}
+fieldset {
+  border: 0;
+  background: var(--card);
+  border-radius: 18px;
+  padding: 14px;
+  margin: 12px 0;
+  box-shadow: var(--shadow);
+}
+legend {
+  font-weight: 600;
+  font-size: 15px;
+  padding: 0;
+  float: left;
+  width: 100%;
+  margin-bottom: 10px;
+}
+label {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin: 10px 0 4px;
+  clear: both;
+}
+input[type='text'],
+input[type='tel'],
+input[type='date'],
+textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 11px 12px;
+  outline: 0;
+}
+input:focus,
+textarea:focus {
+  border-color: var(--accent);
+}
+textarea {
+  resize: none;
+  min-height: 70px;
+}
+.slots {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.slot {
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.slot.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+.slot:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.days {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  margin: 6px 0 0;
+}
+.toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+.counter {
+  text-align: right;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.error {
+  color: var(--danger);
+  font-size: 14px;
+  margin: 8px 0;
+  min-height: 1em;
+  text-align: center;
+}
+.paym {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  background: var(--bg);
+}
+.paym.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.pm-ic {
+  font-size: 26px;
+  flex: none;
+}
+.pm-sub {
+  color: var(--muted);
+  font-size: 12.5px;
+  margin-top: 2px;
+  line-height: 1.35;
+}
+.pm-ok {
+  margin-left: auto;
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 18px;
+}
+.pm-steps {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+  margin-top: 10px;
+}
+.slot small {
+  display: block;
+  font-size: 11px;
+  opacity: 0.8;
+}
+.closed {
+  color: var(--danger);
+  font-size: 14px;
+  margin-top: 8px;
+}
+.seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.quote {
+  margin-top: 10px;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.45;
+  background: var(--accent-soft);
+}
+.quote.err {
+  background: transparent;
+  border: 1px dashed var(--danger);
+  color: var(--danger);
+}
+.quote small {
+  color: var(--muted);
+  display: block;
+}
 
-.done{text-align:center;padding:70px 24px}
-.done .flower{font-size:80px;animation:pop .6s ease}
-@keyframes pop{0%{transform:scale(.3)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
-.done h1{margin:14px 0 8px}
-.done p{color:var(--muted);line-height:1.5}
+.done {
+  text-align: center;
+  padding: 70px 24px;
+}
+.done .flower {
+  font-size: 80px;
+  animation: pop 0.6s ease;
+}
+@keyframes pop {
+  0% {
+    transform: scale(0.3);
+  }
+  70% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.done h1 {
+  margin: 14px 0 8px;
+}
+.done p {
+  color: var(--muted);
+  line-height: 1.5;
+}

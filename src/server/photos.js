@@ -23,7 +23,8 @@ async function assignProjectPhotos() {
   for (const fileName of fs.readdirSync(photosDir)) {
     const fileMatch = fileName.match(PROJECT_PHOTO_PATTERN);
     if (!fileMatch || (await getSetting(`photo_applied:${fileName}`, null))) continue;
-    if (await setProductPhoto(Number(fileMatch[1]), `/photos/${fileName}`)) console.log(`📷 Фото из проекта: ${fileName}`);
+    if (await setProductPhoto(Number(fileMatch[1]), `/photos/${fileName}`))
+      console.log(`📷 Фото из проекта: ${fileName}`);
     await setSetting(`photo_applied:${fileName}`, new Date().toISOString());
   }
 }

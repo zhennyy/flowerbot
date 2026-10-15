@@ -22,7 +22,8 @@ const orderFormValidator = createValidator(async (request) => {
     comment: cleanText(form.comment, 300) || null,
   };
   if (!orderForm.customer_name) throw new ValidationError('Укажите имя');
-  if (orderForm.phone.replace(/\D/g, '').length < MIN_PHONE_DIGITS) throw new ValidationError('Проверьте номер телефона');
+  if (orderForm.phone.replace(/\D/g, '').length < MIN_PHONE_DIGITS)
+    throw new ValidationError('Проверьте номер телефона');
   if (orderForm.address.length < MIN_ADDRESS_LENGTH) throw new ValidationError('Укажите адрес доставки');
   const slotError = await checkDeliverySlot(orderForm.delivery_date, orderForm.delivery_time);
   if (slotError) throw new ValidationError(slotError);

@@ -7,14 +7,26 @@ const BUYER_ID = 7201;
 let shop;
 let buyerCounter = 7300; // лимит — 5 заказов за 10 минут на покупателя, поэтому разные покупатели
 
-before(async () => { shop = await testHelpers.start(); });
+before(async () => {
+  shop = await testHelpers.start();
+});
 
 const nextBuyer = () => ++buyerCounter;
 
 test('заказ с онлайн-оплатой: цены и доставка — с сервера, платёж на полную сумму, флористу — только после оплаты', async () => {
-  const response = await shop.placeOrder(BUYER_ID, [[1, 1, 'M'], [9, 11], [15, 1]], {
-    recipient: 'Маме', card_text: 'С днём рождения <3', total: 1, // сумма из браузера игнорируется
-  });
+  const response = await shop.placeOrder(
+    BUYER_ID,
+    [
+      [1, 1, 'M'],
+      [9, 11],
+      [15, 1],
+    ],
+    {
+      recipient: 'Маме',
+      card_text: 'С днём рождения <3',
+      total: 1, // сумма из браузера игнорируется
+    },
+  );
   assert.equal(response.status, 200, JSON.stringify(response.body));
   assert.deepEqual(Object.keys(response.body), ['ok', 'id', 'pay_url', 'total']);
   const order = await shop.findOrder(response.body.id);
@@ -35,8 +47,14 @@ test('заказ с онлайн-оплатой: цены и доставка �
   assert.equal(payment.body.confirmation.return_url, 'https://t.me/fleur_test_bot');
   assert.match(testHelpers.lastTextTo(BUYER_ID), /Осталось оплатить/);
   assert.match(testHelpers.lastTextTo(BUYER_ID), /С днём рождения &lt;3/, 'текст открытки экранирован');
-  assert.ok((await shop.findOrder(order.id)).status_msg_id > 0, 'запомнили сообщение «Оплатить», чтобы убрать его после оплаты');
-  assert.ok(!testHelpers.sentTo(testHelpers.OWNER_ID).some((call) => /Новый заказ/.test(testHelpers.textOf(call))), 'флористу — после оплаты');
+  assert.ok(
+    (await shop.findOrder(order.id)).status_msg_id > 0,
+    'запомнили сообщение «Оплатить», чтобы убрать его после оплаты',
+  );
+  assert.ok(
+    !testHelpers.sentTo(testHelpers.OWNER_ID).some((call) => /Новый заказ/.test(testHelpers.textOf(call))),
+    'флористу — после оплаты',
+  );
 });
 
 test('ошибки формы: пустая корзина, имя, телефон, адрес — заказ не создаётся', async () => {
@@ -44,14 +62,29 @@ test('ошибки формы: пустая корзина, имя, телефо
   const buyerId = nextBuyer();
   assert.deepEqual((await shop.placeOrder(buyerId, [])).body, { error: 'Корзина пуста' });
   assert.deepEqual((await shop.placeOrder(buyerId, [[1, 1]], { customer_name: ' ' })).body, { error: 'Укажите имя' });
-  assert.deepEqual((await shop.placeOrder(nextBuyer(), [[1, 1]], { phone: '12-34' })).body, { error: 'Проверьте номер телефона' });
-  assert.deepEqual((await shop.placeOrder(nextBuyer(), [[1, 1]], { address: 'дом' })).body, { error: 'Укажите адрес доставки' });
+  assert.deepEqual((await shop.placeOrder(nextBuyer(), [[1, 1]], { phone: '12-34' })).body, {
+    error: 'Проверьте номер телефона',
+  });
+  assert.deepEqual((await shop.placeOrder(nextBuyer(), [[1, 1]], { address: 'дом' })).body, {
+    error: 'Укажите адрес доставки',
+  });
   assert.equal(await shop.database.order.count(), ordersBefore);
 });
 
 test('количество: поштучно — не меньше минимума, букетов — не больше 10, скрытые букеты не заказать', async () => {
-  assert.match((await shop.placeOrder(nextBuyer(), [[9, 3]])).body.error, /«Роза красная, 60 см»: можно заказать от 5 до 501 шт/);
-  assert.match((await shop.placeOrder(nextBuyer(), [[1, 6, 'S'], [1, 5, 'L']])).body.error, /в одном заказе до 10 шт/);
+  assert.match(
+    (await shop.placeOrder(nextBuyer(), [[9, 3]])).body.error,
+    /«Роза красная, 60 см»: можно заказать от 5 до 501 шт/,
+  );
+  assert.match(
+    (
+      await shop.placeOrder(nextBuyer(), [
+        [1, 6, 'S'],
+        [1, 5, 'L'],
+      ])
+    ).body.error,
+    /в одном заказе до 10 шт/,
+  );
   await shop.database.product.update({ where: { id: 6 }, data: { in_stock: 0 } });
   assert.match((await shop.placeOrder(nextBuyer(), [[6, 1]])).body.error, /уже нет в наличии/);
   await shop.database.product.update({ where: { id: 6 }, data: { in_stock: 1 } });
@@ -59,10 +92,19 @@ test('количество: поштучно — не меньше миниму�
 
 test('дата и интервал по Москве: прошедшая дата, несуществующая дата, чужой интервал, выходной', async () => {
   const yesterday = new Date(Date.now() + 3 * 3600e3 - 864e5).toISOString().slice(0, 10);
-  assert.deepEqual((await shop.placeOrder(nextBuyer(), [[2, 1]], { delivery_date: yesterday })).body, { error: 'Дата доставки уже прошла' });
-  assert.deepEqual((await shop.placeOrder(nextBuyer(), [[2, 1]], { delivery_date: '2030-02-31' })).body, { error: 'Выберите дату доставки' });
-  assert.deepEqual((await shop.placeOrder(nextBuyer(), [[2, 1]], { delivery_time: '21:00–23:00' })).body, { error: 'Выберите время доставки' });
-  await shop.call(testHelpers.OWNER_ID, 'PUT', '/api/admin/calendar', { closed: [testHelpers.tomorrowInMoscow()], slotLimit: 0 });
+  assert.deepEqual((await shop.placeOrder(nextBuyer(), [[2, 1]], { delivery_date: yesterday })).body, {
+    error: 'Дата доставки уже прошла',
+  });
+  assert.deepEqual((await shop.placeOrder(nextBuyer(), [[2, 1]], { delivery_date: '2030-02-31' })).body, {
+    error: 'Выберите дату доставки',
+  });
+  assert.deepEqual((await shop.placeOrder(nextBuyer(), [[2, 1]], { delivery_time: '21:00–23:00' })).body, {
+    error: 'Выберите время доставки',
+  });
+  await shop.call(testHelpers.OWNER_ID, 'PUT', '/api/admin/calendar', {
+    closed: [testHelpers.tomorrowInMoscow()],
+    slotLimit: 0,
+  });
   assert.match((await shop.placeOrder(nextBuyer(), [[2, 1]])).body.error, /В этот день мы не работаем/);
   await shop.call(testHelpers.OWNER_ID, 'PUT', '/api/admin/calendar', { closed: [], slotLimit: 0 });
 });
@@ -101,7 +143,9 @@ test('геокодер не отвечает: заказ принят без о�
 test('ЮKassa не создала платёж — заказ не теряем, флорист договорится об оплате', async () => {
   const axios = require('axios');
   const originalPost = axios.post;
-  axios.post = async () => { throw Object.assign(new Error('boom'), { response: { status: 500, data: {} } }); };
+  axios.post = async () => {
+    throw Object.assign(new Error('boom'), { response: { status: 500, data: {} } });
+  };
   const response = await shop.placeOrder(nextBuyer(), [[5, 1, 'L']]);
   axios.post = originalPost;
   assert.deepEqual(Object.keys(response.body), ['ok', 'id']);

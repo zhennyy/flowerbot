@@ -19,17 +19,35 @@ async function getOrdersForReview(delayMinutes = REVIEW_DELAY_MIN, now = Date.no
 }
 
 const setRating = (orderId, rating) => database.order.update({ where: { id: orderId }, data: { rating } });
-const setReviewText = (orderId, reviewText) => database.order.update({ where: { id: orderId }, data: { review_text: reviewText.slice(0, MAX_REVIEW_LENGTH) } });
+const setReviewText = (orderId, reviewText) =>
+  database.order.update({ where: { id: orderId }, data: { review_text: reviewText.slice(0, MAX_REVIEW_LENGTH) } });
 
 async function askReview(bot, order) {
   await database.order.update({ where: { id: order.id }, data: { review_asked: 1 } });
-  await bot.telegram.sendMessage(order.user_id, `Как вам букет по заказу №${order.id}? 🌷\nОцените, пожалуйста — это очень помогает нам`, {
-    ...Markup.inlineKeyboard([[1, 2, 3, 4, 5].map((rating) => Markup.button.callback(`${rating} ⭐`, `rate:${order.id}:${rating}`))]),
-  }).catch((sendError) => console.error('Отзыв:', sendError.message));
+  await bot.telegram
+    .sendMessage(
+      order.user_id,
+      `Как вам букет по заказу №${order.id}? 🌷\nОцените, пожалуйста — это очень помогает нам`,
+      {
+        ...Markup.inlineKeyboard([
+          [1, 2, 3, 4, 5].map((rating) => Markup.button.callback(`${rating} ⭐`, `rate:${order.id}:${rating}`)),
+        ]),
+      },
+    )
+    .catch((sendError) => console.error('Отзыв:', sendError.message));
 }
 
 async function askDueReviews(bot) {
   for (const order of await getOrdersForReview()) await askReview(bot, order);
 }
 
-module.exports = { REVIEW_DELAY_MIN, MAX_REVIEW_LENGTH, stars, getOrdersForReview, setRating, setReviewText, askReview, askDueReviews };
+module.exports = {
+  REVIEW_DELAY_MIN,
+  MAX_REVIEW_LENGTH,
+  stars,
+  getOrdersForReview,
+  setRating,
+  setReviewText,
+  askReview,
+  askDueReviews,
+};

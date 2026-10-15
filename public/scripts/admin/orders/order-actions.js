@@ -21,11 +21,17 @@ async function setOrderStatus(orderId, status) {
 }
 
 function deliverWithoutApproval(orderId) {
-  askConfirmation('Покупатель ещё не ответил на фото. Передать букет курьеру без одобрения?', (confirmed) => confirmed && setOrderStatus(orderId, 'delivering'));
+  askConfirmation(
+    'Покупатель ещё не ответил на фото. Передать букет курьеру без одобрения?',
+    (confirmed) => confirmed && setOrderStatus(orderId, 'delivering'),
+  );
 }
 
 function cancelOrder(orderId) {
-  askConfirmation(`Отменить заказ №${orderId}? Покупатель получит уведомление, цветы вернутся на склад.`, (confirmed) => confirmed && setOrderStatus(orderId, 'cancelled'));
+  askConfirmation(
+    `Отменить заказ №${orderId}? Покупатель получит уведомление, цветы вернутся на склад.`,
+    (confirmed) => confirmed && setOrderStatus(orderId, 'cancelled'),
+  );
 }
 
 // Фото букета с телефона → покупателю на согласование
@@ -42,7 +48,10 @@ async function sendBouquetPhoto(event) {
   photoOrderId = null;
   try {
     const image = await readImageFile(file);
-    const updatedOrder = await callAdminApi(`/orders/${orderId}/photo`, { method: 'POST', body: { full: resizeToJpeg(image, BOUQUET_PHOTO_SIDE, BOUQUET_PHOTO_QUALITY) } });
+    const updatedOrder = await callAdminApi(`/orders/${orderId}/photo`, {
+      method: 'POST',
+      body: { full: resizeToJpeg(image, BOUQUET_PHOTO_SIDE, BOUQUET_PHOTO_QUALITY) },
+    });
     replaceOrder(updatedOrder);
     renderOrders();
     vibrateNotification('success');
@@ -62,5 +71,6 @@ export const orderActions = {
   'cancel-order': (element) => cancelOrder(orderIdOf(element)),
   'pick-bouquet-photo': (element) => pickBouquetPhoto(orderIdOf(element)),
   // Написать покупателю — прямо в «Чатах» админки
-  'chat-about-order': (element) => openChatAboutOrder(orderState.orders.find((order) => order.id === orderIdOf(element))),
+  'chat-about-order': (element) =>
+    openChatAboutOrder(orderState.orders.find((order) => order.id === orderIdOf(element))),
 };

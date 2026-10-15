@@ -9,17 +9,23 @@ import { checkoutState } from './checkout-state.js';
 
 const TYPING_PAUSE_MS = 1200; // ждём, пока человек допечатает
 const MIN_ADDRESS_LENGTH = 5;
-const ADDRESS_PLACEHOLDERS = { city: 'Улица, дом, квартира, подъезд, этаж', region: 'Город/посёлок, улица, дом, квартира' };
+const ADDRESS_PLACEHOLDERS = {
+  city: 'Улица, дом, квартира, подъезд, этаж',
+  region: 'Город/посёлок, улица, дом, квартира',
+};
 let quoteTimer = null;
 let quoteRequestNumber = 0;
 
 export function updateSubmitButton() {
   const deliveryFee = checkoutState.quote?.fee || 0;
-  getElement('submitBtn').textContent = `${checkoutState.payOnline ? 'Перейти к оплате' : 'Заказать'} · ${formatRubles(cartTotal() + deliveryFee)}`;
+  getElement('submitBtn').textContent =
+    `${checkoutState.payOnline ? 'Перейти к оплате' : 'Заказать'} · ${formatRubles(cartTotal() + deliveryFee)}`;
 }
 
 export function showSelectedZone() {
-  document.querySelectorAll('#zones .slot').forEach((button) => button.classList.toggle('active', button.dataset.zone === checkoutState.zone));
+  document
+    .querySelectorAll('#zones .slot')
+    .forEach((button) => button.classList.toggle('active', button.dataset.zone === checkoutState.zone));
 }
 
 function quoteHtml(quote) {
@@ -34,13 +40,19 @@ export function requestQuote(delayMs) {
   updateSubmitButton();
   const address = getElement('f_address').value.trim();
   const quoteBox = getElement('quote');
-  if (address.length < MIN_ADDRESS_LENGTH || !telegramInitData()) { quoteBox.classList.add('hidden'); return; }
+  if (address.length < MIN_ADDRESS_LENGTH || !telegramInitData()) {
+    quoteBox.classList.add('hidden');
+    return;
+  }
   quoteTimer = setTimeout(async () => {
     const requestNumber = ++quoteRequestNumber; // если человек продолжил печатать — старый ответ игнорируем
     quoteBox.className = 'quote';
     quoteBox.textContent = 'Считаем доставку…';
     try {
-      const response = await requestShopApi('/delivery-quote', { signed: true, body: { address, zone: checkoutState.zone, items: cartItemsForServer() } });
+      const response = await requestShopApi('/delivery-quote', {
+        signed: true,
+        body: { address, zone: checkoutState.zone, items: cartItemsForServer() },
+      });
       const quote = await response.json();
       if (requestNumber !== quoteRequestNumber) return;
       if (!response.ok) throw new Error(quote.error || 'Не удалось рассчитать доставку');
@@ -73,15 +85,19 @@ export function listenToAddressInput() {
 export async function loadDeliveryInfo() {
   try {
     const deliveryInfo = await getPublicJson('/delivery-info');
-    getElement('deliveryHint').textContent = `от ${formatRubles(Math.min(...deliveryInfo.city.map((tier) => tier.price)))} · по адресу`;
+    getElement('deliveryHint').textContent =
+      `от ${formatRubles(Math.min(...deliveryInfo.city.map((tier) => tier.price)))} · по адресу`;
     checkoutState.payOnline = Boolean(deliveryInfo.payOnline);
     if (!checkoutState.payOnline) {
-      getElement('payOnline').outerHTML = `<div class="paym on"><div class="pm-ic">🤝</div><div><b>При получении или по договорённости</b>
+      getElement('payOnline').outerHTML =
+        `<div class="paym on"><div class="pm-ic">🤝</div><div><b>При получении или по договорённости</b>
         <div class="pm-sub">Флорист свяжется с вами и подскажет, как удобнее оплатить</div></div><span class="pm-ok">✓</span></div>`;
       getElement('payNote').textContent = '';
     }
     updateSubmitButton();
-  } catch { /* без тарифов витрина работает, подсказка останется «рассчитаем по адресу» */ }
+  } catch {
+    /* без тарифов витрина работает, подсказка останется «рассчитаем по адресу» */
+  }
 }
 
 export const deliveryQuoteActions = {

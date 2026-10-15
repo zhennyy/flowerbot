@@ -23,7 +23,10 @@ async function runCatalogScreens(runner, page) {
   await page.fill('#q', 'кактус');
   await snap(page, 'b04-search-empty');
   await page.locator('#grid .empty button').click();
-  check('«Показать все букеты» очищает поиск', (await page.inputValue('#q')) === '' && (await page.locator('#grid .card').count()) === 14);
+  check(
+    '«Показать все букеты» очищает поиск',
+    (await page.inputValue('#q')) === '' && (await page.locator('#grid .card').count()) === 14,
+  );
   await page.locator('#chips .chip', { hasText: 'Все' }).click();
 
   await card(page, '51 красная роза').click();
@@ -47,7 +50,11 @@ async function runCatalogScreens(runner, page) {
   await page.locator('#sheet .big').click();
   await card(page, 'Шляпная коробка').locator('.add').click();
   await snap(page, 'b11-catalog-with-cart');
-  check('в корзине 4 позиции', /4 товара/.test(await page.locator('#cartCount').innerText()), await page.locator('#cartCount').innerText());
+  check(
+    'в корзине 4 позиции',
+    /4 товара/.test(await page.locator('#cartCount').innerText()),
+    await page.locator('#cartCount').innerText(),
+  );
 }
 
 async function runCartAndCheckout(runner, page) {
@@ -55,7 +62,10 @@ async function runCartAndCheckout(runner, page) {
   await page.locator('#cartbar').click();
   await snap(page, 'b12-cart', { scroller: '#cartPage' });
   await page.locator('#addons .addon', { hasText: 'Стеклянная ваза' }).locator('.add').click();
-  await page.locator('#cartLines .line', { hasText: '51 красная роза' }).locator('.qty button', { hasText: '+' }).click();
+  await page
+    .locator('#cartLines .line', { hasText: '51 красная роза' })
+    .locator('.qty button', { hasText: '+' })
+    .click();
   await snap(page, 'b13-cart-changed', { scroller: '#cartPage' });
 
   await page.locator('#cartFooter .big').click();
@@ -68,7 +78,10 @@ async function runCartAndCheckout(runner, page) {
   await snap(page, 'b16-checkout-region', { scroller: '#checkoutPage' });
   await page.locator('#submitBtn').click();
   await snap(page, 'b17-checkout-no-time', { scroller: '#checkoutPage' });
-  check('без интервала — «Выберите время доставки»', /Выберите время/.test(await page.locator('#formError').innerText()));
+  check(
+    'без интервала — «Выберите время доставки»',
+    /Выберите время/.test(await page.locator('#formError').innerText()),
+  );
 
   await page.locator('#zones .slot', { hasText: 'Санкт-Петербург' }).click();
   await fillAddress(page, 'Псков, ул. Ленина, 1');
@@ -93,8 +106,15 @@ async function runCartAndCheckout(runner, page) {
   await snap(page, 'b20-done');
   await page.locator('#payBtn').click();
   const links = (await telegramLog(page)).links;
-  check('«Оплатить» открывает страницу ЮKassa', links.length === 1 && links[0].startsWith('https://pay.test/'), JSON.stringify(links));
-  check('корзина пуста после заказа', !(await page.locator('#cartbar').evaluate((element) => element.classList.contains('show'))));
+  check(
+    '«Оплатить» открывает страницу ЮKassa',
+    links.length === 1 && links[0].startsWith('https://pay.test/'),
+    JSON.stringify(links),
+  );
+  check(
+    'корзина пуста после заказа',
+    !(await page.locator('#cartbar').evaluate((element) => element.classList.contains('show'))),
+  );
 }
 
 async function runOrderScreens(runner, page, shop) {
@@ -109,15 +129,32 @@ async function runOrderScreens(runner, page, shop) {
   await snap(page, 'b22-my-orders', { scroller: '#ordersPage' });
   const newOrder = await shop.database.order.findFirst({ where: { user_id: BUYER_ID }, orderBy: { id: 'desc' } });
   const ordersText = await page.locator('#myOrders').innerText();
-  check('новый заказ виден в «Мои заказы»', ordersText.includes(`Заказ №${newOrder.id}`) && /Ждёт оплаты/.test(ordersText), ordersText.slice(0, 120));
-  check('в заказе — открытка, получатель и интервал', newOrder.card_text === 'С годовщиной! 🌷' && newOrder.recipient === 'Ольга, +7 921 000-11-22'
-    && newOrder.delivery_time === '15:00–18:00' && newOrder.items.includes('"size":"L"'), JSON.stringify(newOrder).slice(0, 300));
+  check(
+    'новый заказ виден в «Мои заказы»',
+    ordersText.includes(`Заказ №${newOrder.id}`) && /Ждёт оплаты/.test(ordersText),
+    ordersText.slice(0, 120),
+  );
+  check(
+    'в заказе — открытка, получатель и интервал',
+    newOrder.card_text === 'С годовщиной! 🌷' &&
+      newOrder.recipient === 'Ольга, +7 921 000-11-22' &&
+      newOrder.delivery_time === '15:00–18:00' &&
+      newOrder.items.includes('"size":"L"'),
+    JSON.stringify(newOrder).slice(0, 300),
+  );
 
-  await page.locator('#myOrders .myord', { hasText: 'С днём рождения, мама!' }).locator('.mo-act button', { hasText: 'Повторить' }).click();
+  await page
+    .locator('#myOrders .myord', { hasText: 'С днём рождения, мама!' })
+    .locator('.mo-act button', { hasText: 'Повторить' })
+    .click();
   await page.waitForSelector('#cartPage.show');
   await snap(page, 'b23-repeat-order-cart', { scroller: '#cartPage' });
   const alerts = (await telegramLog(page)).alerts;
-  check('«Повторить» собирает корзину и сообщает об этом', /Собрали корзину по заказу/.test(alerts.at(-1)), alerts.at(-1));
+  check(
+    '«Повторить» собирает корзину и сообщает об этом',
+    /Собрали корзину по заказу/.test(alerts.at(-1)),
+    alerts.at(-1),
+  );
 }
 
 async function runBuyerScreens(runner, shop) {
@@ -138,7 +175,11 @@ async function runBuyerScreens(runner, shop) {
   await snap(dark, 'b26-my-orders-dark', { scroller: '#ordersPage' });
   await dark.context().close();
 
-  const desktop = await openPage(BUYER_ID, { name: 'buyer-desktop', viewport: DESKTOP_VIEWPORT, waitFor: '#grid .card' });
+  const desktop = await openPage(BUYER_ID, {
+    name: 'buyer-desktop',
+    viewport: DESKTOP_VIEWPORT,
+    waitFor: '#grid .card',
+  });
   await snap(desktop, 'b27-catalog-desktop');
   await card(desktop, 'Роза пионовидная').click();
   await snap(desktop, 'b28-sheet-desktop');

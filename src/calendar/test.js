@@ -21,14 +21,20 @@ test('дата и час — по Москве, а не по UTC сервера'
 });
 
 test('прошедшая дата: «вчера» по Москве нельзя, хотя по UTC это ещё сегодня', async () => {
-  assert.equal(await calendar.checkDeliverySlot('2026-10-14', '18:00–21:00', LATE_EVENING_UTC), 'Дата доставки уже прошла');
+  assert.equal(
+    await calendar.checkDeliverySlot('2026-10-14', '18:00–21:00', LATE_EVENING_UTC),
+    'Дата доставки уже прошла',
+  );
   assert.equal(await calendar.checkDeliverySlot('2026-10-15', '09:00–12:00', LATE_EVENING_UTC), null);
 });
 
 test('несуществующая дата и чужой интервал не проходят', async () => {
   assert.equal(await calendar.checkDeliverySlot('2026-02-31', '12:00–15:00', MORNING_MOSCOW), 'Выберите дату доставки');
   assert.equal(await calendar.checkDeliverySlot('31.12.2026', '12:00–15:00', MORNING_MOSCOW), 'Выберите дату доставки');
-  assert.equal(await calendar.checkDeliverySlot('2026-10-20', '10:00–13:00', MORNING_MOSCOW), 'Выберите время доставки');
+  assert.equal(
+    await calendar.checkDeliverySlot('2026-10-20', '10:00–13:00', MORNING_MOSCOW),
+    'Выберите время доставки',
+  );
 });
 
 test('сегодня: интервал должен закончиться хотя бы через час', async () => {

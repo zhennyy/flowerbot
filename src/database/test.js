@@ -46,34 +46,69 @@ ALTER TABLE orders ADD COLUMN pay_url TEXT;
 PRAGMA user_version = 10;
 `;
 
-const columnsOf = (connection, tableName) => connection.prepare(`PRAGMA table_info(${tableName})`).all().map((column) => `${column.name}:${column.type}:${column.notnull}:${column.dflt_value}`);
-const tableNamesOf = (connection) => connection.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all().map((row) => row.name);
+const columnsOf = (connection, tableName) =>
+  connection
+    .prepare(`PRAGMA table_info(${tableName})`)
+    .all()
+    .map((column) => `${column.name}:${column.type}:${column.notnull}:${column.dflt_value}`);
+const tableNamesOf = (connection) =>
+  connection
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
+    .all()
+    .map((row) => row.name);
 const newTemporaryPath = (prefix) => path.join(fs.mkdtempSync(path.join(os.tmpdir(), prefix)), 'shop.db');
 
 let shop;
-before(async () => { shop = await testHelpers.start(); });
+before(async () => {
+  shop = await testHelpers.start();
+});
 
 test('старая база: миграция ничего не меняет в данных, второй запуск — тоже; Prisma читает заказы, сообщения и напоминания', async () => {
   const oldDatabasePath = newTemporaryPath('flowerbot-old-');
   const oldConnection = new Database(oldDatabasePath);
   oldConnection.exec(OLD_SCHEMA_SQL);
-  oldConnection.prepare("INSERT INTO products (category, name, price, unit, min_qty, stock, sizes, sort) VALUES ('Поштучно', 'Роза', 190, 'шт', 5, 40, NULL, 100)").run();
-  oldConnection.prepare(`INSERT INTO orders (user_id, username, customer_name, phone, address, delivery_date, delivery_time, items, total, status,
+  oldConnection
+    .prepare(
+      "INSERT INTO products (category, name, price, unit, min_qty, stock, sizes, sort) VALUES ('Поштучно', 'Роза', 190, 'шт', 5, 40, NULL, 100)",
+    )
+    .run();
+  oldConnection
+    .prepare(
+      `INSERT INTO orders (user_id, username, customer_name, phone, address, delivery_date, delivery_time, items, total, status,
     delivery_fee, delivery_km, delivery_zone, rating, payment_id, payment_status, paid_at)
-    VALUES (7392580260, 'anna', 'Анна', '+7 900', 'Невский, 1', '2026-10-01', '12:00–15:00', ?, 2380, 'done', 290, 4.2, 'Санкт-Петербург', 5, 'pay-1', 'paid', '2026-10-01 09:00:00')`)
+    VALUES (7392580260, 'anna', 'Анна', '+7 900', 'Невский, 1', '2026-10-01', '12:00–15:00', ?, 2380, 'done', 290, 4.2, 'Санкт-Петербург', 5, 'pay-1', 'paid', '2026-10-01 09:00:00')`,
+    )
     .run(JSON.stringify([{ id: 1, name: 'Роза', price: 190, qty: 11, unit: 'шт', size: null }]));
-  oldConnection.prepare("INSERT INTO messages (user_id, name, direction, text) VALUES (7392580260, 'Анна', 'in', 'Спасибо!')").run();
-  oldConnection.prepare("INSERT INTO reminders (user_id, order_id, occasion, event_date, remind_at) VALUES (7392580260, 1, '🎂 День рождения', '2027-10-01', '2027-09-28')").run();
+  oldConnection
+    .prepare("INSERT INTO messages (user_id, name, direction, text) VALUES (7392580260, 'Анна', 'in', 'Спасибо!')")
+    .run();
+  oldConnection
+    .prepare(
+      "INSERT INTO reminders (user_id, order_id, occasion, event_date, remind_at) VALUES (7392580260, 1, '🎂 День рождения', '2027-10-01', '2027-09-28')",
+    )
+    .run();
   oldConnection.prepare("INSERT INTO settings (key, value) VALUES ('photo_timeout', '45')").run();
-  const dumpBefore = Object.fromEntries(['products', 'orders', 'messages', 'reminders', 'settings'].map((tableName) => [tableName, oldConnection.prepare(`SELECT * FROM ${tableName}`).all()]));
+  const dumpBefore = Object.fromEntries(
+    ['products', 'orders', 'messages', 'reminders', 'settings'].map((tableName) => [
+      tableName,
+      oldConnection.prepare(`SELECT * FROM ${tableName}`).all(),
+    ]),
+  );
   oldConnection.close();
 
   runMigrations(oldDatabasePath);
   runMigrations(oldDatabasePath);
 
   const migrated = new Database(oldDatabasePath);
-  assert.deepEqual(migrated.prepare('SELECT name FROM _app_migrations').all().map((row) => row.name), ['001_baseline.sql']);
-  for (const [tableName, rowsBefore] of Object.entries(dumpBefore)) assert.deepEqual(migrated.prepare(`SELECT * FROM ${tableName}`).all(), rowsBefore, tableName);
+  assert.deepEqual(
+    migrated
+      .prepare('SELECT name FROM _app_migrations')
+      .all()
+      .map((row) => row.name),
+    ['001_baseline.sql'],
+  );
+  for (const [tableName, rowsBefore] of Object.entries(dumpBefore))
+    assert.deepEqual(migrated.prepare(`SELECT * FROM ${tableName}`).all(), rowsBefore, tableName);
   assert.equal(migrated.pragma('user_version', { simple: true }), 10);
   migrated.close();
 
@@ -88,10 +123,25 @@ test('старая база: миграция ничего не меняет в 
     assert.match(order.created_at, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
     assert.equal((await prisma.message.findFirst()).text, 'Спасибо!');
     assert.equal((await prisma.reminder.findFirst()).remind_at, '2027-09-28');
-    const created = await prisma.order.create({ data: { user_id: 1, customer_name: 'Б', phone: '1', address: 'А', delivery_date: '2026-10-20', delivery_time: '12:00–15:00', items: '[]', total: 1 } });
+    const created = await prisma.order.create({
+      data: {
+        user_id: 1,
+        customer_name: 'Б',
+        phone: '1',
+        address: 'А',
+        delivery_date: '2026-10-20',
+        delivery_time: '12:00–15:00',
+        items: '[]',
+        total: 1,
+      },
+    });
     assert.equal(created.id, 2);
     assert.equal(created.status, 'new');
-    assert.match(created.created_at, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/, 'дата по умолчанию — как раньше, datetime(now)');
+    assert.match(
+      created.created_at,
+      /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/,
+      'дата по умолчанию — как раньше, datetime(now)',
+    );
   } finally {
     await prisma.$disconnect();
   }
@@ -102,7 +152,8 @@ test('новая база по миграциям совпадает со ста
   oldConnection.exec(OLD_SCHEMA_SQL);
   const freshConnection = new Database(path.join(process.env.DATA_DIR, 'shop.db'), { readonly: true });
   assert.deepEqual(tableNamesOf(freshConnection), ['_app_migrations', ...tableNamesOf(oldConnection)]);
-  for (const tableName of tableNamesOf(oldConnection)) assert.deepEqual(columnsOf(freshConnection, tableName), columnsOf(oldConnection, tableName), tableName);
+  for (const tableName of tableNamesOf(oldConnection))
+    assert.deepEqual(columnsOf(freshConnection, tableName), columnsOf(oldConnection, tableName), tableName);
   oldConnection.close();
   freshConnection.close();
 });
@@ -110,7 +161,7 @@ test('новая база по миграциям совпадает со ста
 test('база очень старой версии (до v10) — понятная ошибка вместо поломанной схемы', () => {
   const ancientDatabasePath = newTemporaryPath('flowerbot-ancient-');
   const ancientConnection = new Database(ancientDatabasePath);
-  ancientConnection.exec("CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT); PRAGMA user_version = 4;");
+  ancientConnection.exec('CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT); PRAGMA user_version = 4;');
   ancientConnection.close();
   assert.throws(() => runMigrations(ancientDatabasePath), /База старой версии \(4\)/);
 });
@@ -129,9 +180,12 @@ test('пустая база: стартовый каталог ровно оди
 
 test('транзакция: ошибка внутри откатывает всё', async () => {
   const { runInTransaction, database } = require('./index');
-  await assert.rejects(runInTransaction(async () => {
-    await database.setting.create({ data: { key: 'transaction-test', value: '1' } });
-    throw new Error('сломалось');
-  }), /сломалось/);
+  await assert.rejects(
+    runInTransaction(async () => {
+      await database.setting.create({ data: { key: 'transaction-test', value: '1' } });
+      throw new Error('сломалось');
+    }),
+    /сломалось/,
+  );
   assert.equal(await shop.database.setting.findUnique({ where: { key: 'transaction-test' } }), null);
 });

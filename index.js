@@ -14,7 +14,9 @@ const { bot, launchBot } = require('./src/bot');
 const { startServer } = require('./src/server');
 const { startSchedulers } = require('./src/schedulers');
 
-process.on('unhandledRejection', (rejectionReason) => console.error('Необработанная ошибка:', rejectionReason?.message || rejectionReason));
+process.on('unhandledRejection', (rejectionReason) =>
+  console.error('Необработанная ошибка:', rejectionReason?.message || rejectionReason),
+);
 
 async function start() {
   await initializeDatabase();

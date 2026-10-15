@@ -22,17 +22,21 @@ function describeError(requestError) {
 // Создаём платёж. Возвращает { id, confirmation: { confirmation_url } }
 async function createPayment({ orderId, amount, description, returnUrl }) {
   try {
-    const response = await axios.post(YOOKASSA_API, {
-      amount: { value: amount.toFixed(2), currency: 'RUB' },
-      confirmation: { type: 'redirect', return_url: returnUrl },
-      capture: true,
-      description: description.slice(0, MAX_DESCRIPTION_LENGTH),
-      metadata: { order_id: String(orderId), app: OUR_APP_ID },
-    }, {
-      auth: credentials(),
-      headers: { 'Idempotence-Key': `order-${orderId}-${crypto.randomUUID()}` },
-      timeout: REQUEST_TIMEOUT_MS,
-    });
+    const response = await axios.post(
+      YOOKASSA_API,
+      {
+        amount: { value: amount.toFixed(2), currency: 'RUB' },
+        confirmation: { type: 'redirect', return_url: returnUrl },
+        capture: true,
+        description: description.slice(0, MAX_DESCRIPTION_LENGTH),
+        metadata: { order_id: String(orderId), app: OUR_APP_ID },
+      },
+      {
+        auth: credentials(),
+        headers: { 'Idempotence-Key': `order-${orderId}-${crypto.randomUUID()}` },
+        timeout: REQUEST_TIMEOUT_MS,
+      },
+    );
     return response.data;
   } catch (requestError) {
     throw describeError(requestError);
@@ -42,7 +46,10 @@ async function createPayment({ orderId, amount, description, returnUrl }) {
 // Узнаём актуальный статус платежа прямо у ЮKassa (не доверяем входящим уведомлениям «на слово»)
 async function getPayment(paymentId) {
   try {
-    const response = await axios.get(`${YOOKASSA_API}/${encodeURIComponent(paymentId)}`, { auth: credentials(), timeout: REQUEST_TIMEOUT_MS });
+    const response = await axios.get(`${YOOKASSA_API}/${encodeURIComponent(paymentId)}`, {
+      auth: credentials(),
+      timeout: REQUEST_TIMEOUT_MS,
+    });
     return response.data;
   } catch (requestError) {
     throw describeError(requestError);

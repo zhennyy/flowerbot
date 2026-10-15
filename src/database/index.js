@@ -23,19 +23,25 @@ function connect() {
 }
 
 // Обращение database.order.findMany(...) идёт в активную транзакцию, если она есть, иначе — в общий клиент
-const database = new Proxy({}, {
-  get(_target, propertyName) {
-    const activeClient = transactionStorage.getStore() || connect();
-    const value = activeClient[propertyName];
-    return typeof value === 'function' ? value.bind(activeClient) : value;
+const database = new Proxy(
+  {},
+  {
+    get(_target, propertyName) {
+      const activeClient = transactionStorage.getStore() || connect();
+      const value = activeClient[propertyName];
+      return typeof value === 'function' ? value.bind(activeClient) : value;
+    },
   },
-});
+);
 
 // Всё внутри work выполняется одной транзакцией: либо целиком, либо никак.
 // Вложенный вызов просто продолжает внешнюю транзакцию.
 async function runInTransaction(work) {
   if (transactionStorage.getStore()) return work();
-  return connect().$transaction((transactionClient) => transactionStorage.run(transactionClient, work), { timeout: 30000, maxWait: 30000 });
+  return connect().$transaction((transactionClient) => transactionStorage.run(transactionClient, work), {
+    timeout: 30000,
+    maxWait: 30000,
+  });
 }
 
 // Время в формате, в котором SQLite хранит даты в этой базе: «2026-10-08 19:30:00» (UTC)
@@ -49,4 +55,14 @@ async function disconnect() {
   prismaClient = null;
 }
 
-module.exports = { database, runInTransaction, toSqliteTimestamp, fromSqliteTimestamp, connect, disconnect, databasePath, dataDirectory, PROJECT_DIR };
+module.exports = {
+  database,
+  runInTransaction,
+  toSqliteTimestamp,
+  fromSqliteTimestamp,
+  connect,
+  disconnect,
+  databasePath,
+  dataDirectory,
+  PROJECT_DIR,
+};

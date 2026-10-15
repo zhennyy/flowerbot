@@ -6,21 +6,47 @@ const testHelpers = require('../../test-helpers');
 const OWNER_ID = testHelpers.OWNER_ID;
 let shop;
 
-before(async () => { shop = await testHelpers.start(); });
+before(async () => {
+  shop = await testHelpers.start();
+});
 
 test('выручка считает оплаченные и без онлайн-оплаты, не считает отменённые и ждущие оплаты', async () => {
   const { toSqliteTimestamp } = require('../../../database');
-  const baseOrder = { customer_name: 'А', phone: '89000000000', address: 'Невский', delivery_date: '2026-10-20', delivery_time: '12:00–15:00' };
-  const items = (productId, price, qty) => JSON.stringify([{ id: productId, name: `Букет ${productId}`, price, qty, unit: null, size: null }]);
-  await shop.database.order.createMany({ data: [
-    { ...baseOrder, user_id: 1, items: items(1, 3000, 1), total: 3290, delivery_fee: 290, payment_status: 'paid', rating: 5, card_text: 'Люблю' },
-    { ...baseOrder, user_id: 1, items: items(2, 8000, 1), total: 8000, delivery_fee: 0, rating: 4 },
-    { ...baseOrder, user_id: 2, items: items(1, 3000, 2), total: 6390, delivery_fee: 390, payment_status: null },
-    { ...baseOrder, user_id: 3, items: items(3, 9999, 1), total: 9999, status: 'cancelled' },
-    { ...baseOrder, user_id: 4, items: items(3, 5000, 1), total: 5000, payment_status: 'pending' },
-    // 40 дней назад — в 30-дневную статистику не попадает
-    { ...baseOrder, user_id: 5, items: items(3, 1000, 1), total: 1000, created_at: toSqliteTimestamp(Date.now() - 40 * 864e5) },
-  ] });
+  const baseOrder = {
+    customer_name: 'А',
+    phone: '89000000000',
+    address: 'Невский',
+    delivery_date: '2026-10-20',
+    delivery_time: '12:00–15:00',
+  };
+  const items = (productId, price, qty) =>
+    JSON.stringify([{ id: productId, name: `Букет ${productId}`, price, qty, unit: null, size: null }]);
+  await shop.database.order.createMany({
+    data: [
+      {
+        ...baseOrder,
+        user_id: 1,
+        items: items(1, 3000, 1),
+        total: 3290,
+        delivery_fee: 290,
+        payment_status: 'paid',
+        rating: 5,
+        card_text: 'Люблю',
+      },
+      { ...baseOrder, user_id: 1, items: items(2, 8000, 1), total: 8000, delivery_fee: 0, rating: 4 },
+      { ...baseOrder, user_id: 2, items: items(1, 3000, 2), total: 6390, delivery_fee: 390, payment_status: null },
+      { ...baseOrder, user_id: 3, items: items(3, 9999, 1), total: 9999, status: 'cancelled' },
+      { ...baseOrder, user_id: 4, items: items(3, 5000, 1), total: 5000, payment_status: 'pending' },
+      // 40 дней назад — в 30-дневную статистику не попадает
+      {
+        ...baseOrder,
+        user_id: 5,
+        items: items(3, 1000, 1),
+        total: 1000,
+        created_at: toSqliteTimestamp(Date.now() - 40 * 864e5),
+      },
+    ],
+  });
 
   const response = await shop.call(OWNER_ID, 'GET', '/api/admin/stats?days=30');
   const stats = response.body;
@@ -38,7 +64,11 @@ test('выручка считает оплаченные и без онлайн-
   assert.equal(stats.rating, 4.5);
   assert.deepEqual(stats.top[0], { name: 'Букет 1', qty: 3, revenue: 9000, unit: null });
   assert.equal(stats.byDay.length, 30);
-  assert.equal(stats.byDay.at(-1).date, new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10), 'последний день — сегодня по Москве');
+  assert.equal(
+    stats.byDay.at(-1).date,
+    new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10),
+    'последний день — сегодня по Москве',
+  );
   assert.deepEqual(stats.byDay.at(-1), { date: stats.byDay.at(-1).date, revenue: 17680, orders: 3 });
   assert.deepEqual(stats.byStatus, { new: 4, cancelled: 1 });
   assert.equal(stats.statuses.done, '🌷 Доставлен');

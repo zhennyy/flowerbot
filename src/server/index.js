@@ -28,21 +28,35 @@ function createApp(bot) {
   // большие тела принимаем только после проверки, что это владелица (иначе любой мог бы слать по 8 МБ)
   const parseSmallJson = express.json({ limit: '100kb' });
   const parseLargeJson = express.json({ limit: '8mb' });
-  app.use((request, response, next) => (LARGE_BODY_PATHS.some((pathPattern) => pathPattern.test(request.path))
-    ? ownerAuth(request, response, () => parseLargeJson(request, response, next))
-    : parseSmallJson(request, response, next)));
+  app.use((request, response, next) =>
+    LARGE_BODY_PATHS.some((pathPattern) => pathPattern.test(request.path))
+      ? ownerAuth(request, response, () => parseLargeJson(request, response, next))
+      : parseSmallJson(request, response, next),
+  );
 
   // Фото, загруженные из админки (на сервере — /data/flowerbot/uploads), и сама витрина
   fs.mkdirSync(photos.uploadsDir, { recursive: true });
   app.use('/uploads', express.static(photos.uploadsDir, { maxAge: '30d' }));
   // Страницы, стили и скрипты (ES-модули) браузер каждый раз сверяет с сервером (ETag, без скачивания, если не менялись):
   // после обновления Telegram не покажет старую витрину вперемешку с новыми модулями
-  app.use(express.static(PUBLIC_DIR, {
-    setHeaders: (response, filePath) => { if (/\.(html|css|js)$/.test(filePath)) response.set('Cache-Control', 'no-cache'); },
-  }));
+  app.use(
+    express.static(PUBLIC_DIR, {
+      setHeaders: (response, filePath) => {
+        if (/\.(html|css|js)$/.test(filePath)) response.set('Cache-Control', 'no-cache');
+      },
+    }),
+  );
 
   // Не больше 120 запросов к API в минуту с одного адреса — от «долбёжки» сервера
-  app.use('/api', createRateLimit({ max: API_REQUESTS_PER_MINUTE, windowMs: 60000, key: (request) => request.ip, message: 'Слишком много запросов, подождите минутку' }));
+  app.use(
+    '/api',
+    createRateLimit({
+      max: API_REQUESTS_PER_MINUTE,
+      windowMs: 60000,
+      key: (request) => request.ip,
+      message: 'Слишком много запросов, подождите минутку',
+    }),
+  );
   app.use('/api', createShopRouter({ telegramAuth }));
   app.use('/api', createCheckoutRouter({ bot, telegramAuth }));
   app.use('/api/admin', createAdminProductsRouter({ ownerAuth }));

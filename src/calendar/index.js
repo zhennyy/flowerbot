@@ -10,11 +10,13 @@ const DEFAULT_CALENDAR = { closed: [], slotLimit: 0 }; // slotLimit 0 = без �
 const SAME_DAY_MARGIN_HOURS = 1;
 
 // Дата по Москве «2026-10-14»: сегодня, завтра (plusDays = 1)…
-const moscowDate = (plusDays = 0, now = Date.now()) => new Date(now + MOSCOW_OFFSET_MS + plusDays * DAY_MS).toISOString().slice(0, 10);
+const moscowDate = (plusDays = 0, now = Date.now()) =>
+  new Date(now + MOSCOW_OFFSET_MS + plusDays * DAY_MS).toISOString().slice(0, 10);
 const moscowHour = (now = Date.now()) => new Date(now + MOSCOW_OFFSET_MS).getUTCHours();
 
 // «2026-02-31» тоже похоже на дату — проверяем, что такой день есть в календаре
-const isCalendarDate = (isoDate) => /^\d{4}-\d{2}-\d{2}$/.test(isoDate) && new Date(isoDate + 'T00:00:00Z').toISOString().slice(0, 10) === isoDate;
+const isCalendarDate = (isoDate) =>
+  /^\d{4}-\d{2}-\d{2}$/.test(isoDate) && new Date(isoDate + 'T00:00:00Z').toISOString().slice(0, 10) === isoDate;
 
 const getCalendar = () => getSetting('calendar', DEFAULT_CALENDAR);
 
@@ -42,8 +44,18 @@ async function checkDeliverySlot(isoDate, deliveryTime, now = Date.now()) {
   }
   const day = await slotsFor(isoDate);
   if (day.closed) return 'В этот день мы не работаем 🌿 Выберите другую дату';
-  if (!day.slots.find((slot) => slot.time === deliveryTime).available) return 'На это время заказов уже много 🙈 Выберите другой интервал';
+  if (!day.slots.find((slot) => slot.time === deliveryTime).available)
+    return 'На это время заказов уже много 🙈 Выберите другой интервал';
   return null;
 }
 
-module.exports = { TIME_SLOTS, DEFAULT_CALENDAR, moscowDate, moscowHour, isCalendarDate, getCalendar, slotsFor, checkDeliverySlot };
+module.exports = {
+  TIME_SLOTS,
+  DEFAULT_CALENDAR,
+  moscowDate,
+  moscowHour,
+  isCalendarDate,
+  getCalendar,
+  slotsFor,
+  checkDeliverySlot,
+};

@@ -19,8 +19,12 @@ function readOrderForm() {
   const fieldValue = (id) => getElement(id).value;
   return {
     items: cartItemsForServer(),
-    customer_name: fieldValue('f_name'), phone: fieldValue('f_phone'), address: fieldValue('f_address'),
-    delivery_date: fieldValue('f_date'), delivery_time: checkoutState.slot, delivery_zone: checkoutState.zone,
+    customer_name: fieldValue('f_name'),
+    phone: fieldValue('f_phone'),
+    address: fieldValue('f_address'),
+    delivery_date: fieldValue('f_date'),
+    delivery_time: checkoutState.slot,
+    delivery_zone: checkoutState.zone,
     recipient: getElement('t_recipient').checked ? fieldValue('f_recipient') : '',
     card_text: getElement('t_card').checked ? fieldValue('f_card') : '',
     comment: fieldValue('f_comment'),
@@ -75,7 +79,10 @@ async function submitOrder(event) {
   const errorBox = getElement('formError');
   errorBox.textContent = '';
   const problem = findFormProblem();
-  if (problem) { errorBox.textContent = problem; return; }
+  if (problem) {
+    errorBox.textContent = problem;
+    return;
+  }
   const order = readOrderForm();
   const submitButton = getElement('submitBtn');
   submitButton.disabled = true;
@@ -99,5 +106,7 @@ export const listenToOrderForm = () => getElement('orderForm').addEventListener(
 
 export const submitOrderActions = {
   // Онлайн-оплата: после оплаты подтверждение придёт в чат
-  'pay-new-order': () => { if (newOrderPayUrl) openExternalLink(newOrderPayUrl); },
+  'pay-new-order': () => {
+    if (newOrderPayUrl) openExternalLink(newOrderPayUrl);
+  },
 };

@@ -30,7 +30,9 @@ export function changeCartQuantity(key, delta) {
     return;
   }
   if (delta > 0 && quantityAfterChange > maxQuantity(product)) {
-    showAlert(`В одном заказе — до ${maxQuantity(product)} шт «${product.name}». Нужно больше? Напишите флористу в чат с ботом — соберём оптовый заказ 💐`);
+    showAlert(
+      `В одном заказе — до ${maxQuantity(product)} шт «${product.name}». Нужно больше? Напишите флористу в чат с ботом — соберём оптовый заказ 💐`,
+    );
     return;
   }
   if (nextQuantity > currentQuantity) playAddToCartEffect(); // до перерисовки, пока карточка на месте

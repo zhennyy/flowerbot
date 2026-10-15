@@ -1,11 +1,30 @@
 /* Общее для витрины и админки: цвета (светлая и тёмная тема — по настройке телефона) и сброс отступов */
-:root{
-  --bg:#fbf7f4; --card:#ffffff; --text:#2b2227; --muted:#8a7d83;
-  --accent:#c2587a; --accent-soft:#f6e3ea; --line:#efe6e9; --danger:#c0392b;
-  --shadow:0 6px 20px rgba(120,60,80,.08);
+:root {
+  --bg: #fbf7f4;
+  --card: #ffffff;
+  --text: #2b2227;
+  --muted: #8a7d83;
+  --accent: #c2587a;
+  --accent-soft: #f6e3ea;
+  --line: #efe6e9;
+  --danger: #c0392b;
+  --shadow: 0 6px 20px rgba(120, 60, 80, 0.08);
 }
-@media (prefers-color-scheme: dark){
-  :root{ --bg:#1b1619; --card:#262024; --text:#f3eaee; --muted:#a8989f;
-    --accent:#e07c9c; --accent-soft:#3a2830; --line:#342a2f; --shadow:0 6px 20px rgba(0,0,0,.3); }
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1619;
+    --card: #262024;
+    --text: #f3eaee;
+    --muted: #a8989f;
+    --accent: #e07c9c;
+    --accent-soft: #3a2830;
+    --line: #342a2f;
+    --shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  }
 }
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}

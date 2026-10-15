@@ -12,7 +12,10 @@ before(async () => {
   shop = await testHelpers.start();
   process.env.YOOKASSA_SHOP_ID = ''; // без онлайн-оплаты: заказ сразу «принят»
   await shop.database.product.update({ where: { id: 12 }, data: { stock: 30 } });
-  const response = await shop.placeOrder(BUYER_ID, [[12, 10], [16, 1]]);
+  const response = await shop.placeOrder(BUYER_ID, [
+    [12, 10],
+    [16, 1],
+  ]);
   assert.equal(response.status, 200, JSON.stringify(response.body));
   orderId = response.body.id;
 });
@@ -32,10 +35,14 @@ test('смена статуса: покупателю — сообщение с 
   const confirmed = await shop.call(OWNER_ID, 'POST', `/api/admin/orders/${orderId}/status`, { status: 'confirmed' });
   assert.equal(confirmed.status, 200);
   assert.equal(confirmed.body.status, 'confirmed');
-  assert.match(testHelpers.lastTextTo(BUYER_ID), /Заказ подтверждён![\s\S]*✔︎  Принят\n▸  <b>Подтверждён<\/b>/);
+  assert.match(testHelpers.lastTextTo(BUYER_ID), /Заказ подтверждён![\s\S]*✔︎ {2}Принят\n▸ {2}<b>Подтверждён<\/b>/);
   const firstStatusMessage = (await shop.findOrder(orderId)).status_msg_id;
   await shop.call(OWNER_ID, 'POST', `/api/admin/orders/${orderId}/status`, { status: 'assembling' });
-  assert.ok(testHelpers.telegramCalls.some((call) => call.method === 'deleteMessage' && call.payload.message_id === firstStatusMessage));
+  assert.ok(
+    testHelpers.telegramCalls.some(
+      (call) => call.method === 'deleteMessage' && call.payload.message_id === firstStatusMessage,
+    ),
+  );
   // фото букета в статусе — с витрины (полное фото вместо миниатюры)
   assert.equal(testHelpers.sentTo(BUYER_ID).at(-1).method, 'sendPhoto');
 });
@@ -55,7 +62,9 @@ test('неизвестный статус (и даже «constructor») не з�
     assert.deepEqual(response.body, { error: 'Неизвестный статус' }, status);
   }
   assert.equal((await shop.findOrder(orderId)).status, 'new');
-  assert.deepEqual((await shop.call(OWNER_ID, 'POST', '/api/admin/orders/99999/status', { status: 'done' })).body, { error: 'Заказ не найден' });
+  assert.deepEqual((await shop.call(OWNER_ID, 'POST', '/api/admin/orders/99999/status', { status: 'done' })).body, {
+    error: 'Заказ не найден',
+  });
 });
 
 test('«Доставлен» запоминает время доставки один раз', async () => {
@@ -68,13 +77,19 @@ test('«Доставлен» запоминает время доставки о
 });
 
 test('фото букета из админки: покупателю с кнопками, заказ ждёт ответа', async () => {
-  const jpeg = 'data:image/jpeg;base64,' + Buffer.concat([Buffer.from([0xff, 0xd8]), Buffer.alloc(300, 1)]).toString('base64');
+  const jpeg =
+    'data:image/jpeg;base64,' + Buffer.concat([Buffer.from([0xff, 0xd8]), Buffer.alloc(300, 1)]).toString('base64');
   const response = await shop.call(OWNER_ID, 'POST', `/api/admin/orders/${orderId}/photo`, { full: jpeg });
   assert.equal(response.status, 200, JSON.stringify(response.body));
   assert.equal(response.body.photo_status, 'pending');
   assert.match(response.body.bouquet_photo, /^photo-\d+$/);
   const photoCall = testHelpers.sentTo(BUYER_ID).at(-1);
   assert.equal(photoCall.method, 'sendPhoto');
-  assert.deepEqual(photoCall.payload.reply_markup.inline_keyboard[0].map((button) => button.callback_data), [`ph:ok:${orderId}`, `ph:no:${orderId}`]);
-  assert.deepEqual((await shop.call(OWNER_ID, 'POST', '/api/admin/orders/99999/photo', { full: jpeg })).body, { error: 'Заказ №99999 не найден' });
+  assert.deepEqual(
+    photoCall.payload.reply_markup.inline_keyboard[0].map((button) => button.callback_data),
+    [`ph:ok:${orderId}`, `ph:no:${orderId}`],
+  );
+  assert.deepEqual((await shop.call(OWNER_ID, 'POST', '/api/admin/orders/99999/photo', { full: jpeg })).body, {
+    error: 'Заказ №99999 не найден',
+  });
 });

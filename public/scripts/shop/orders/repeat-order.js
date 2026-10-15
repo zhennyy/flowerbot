@@ -16,8 +16,14 @@ function fillCartFromOrder(order) {
   let missingCount = 0;
   for (const item of order.items) {
     const product = findProduct(item.id);
-    if (!product) { missingCount++; continue; }
-    state.cart[cartKey(item.id, hasSizes(product) ? item.size : null)] = Math.min(maxQuantity(product), Math.max(item.qty, minQuantity(product)));
+    if (!product) {
+      missingCount++;
+      continue;
+    }
+    state.cart[cartKey(item.id, hasSizes(product) ? item.size : null)] = Math.min(
+      maxQuantity(product),
+      Math.max(item.qty, minQuantity(product)),
+    );
   }
   return missingCount;
 }
@@ -46,10 +52,14 @@ export async function repeatOrder(orderId) {
     fillDeliveryFromOrder(order);
     refreshCartViews();
     if (Object.keys(state.cart).length) goToPage('cartPage');
-    showAlert(missingCount
-      ? `Собрали корзину по заказу №${order.id} 🌷 ${missingCount} ${pluralize(missingCount, ['позиции', 'позиций', 'позиций'])} уже нет в наличии — выберите замену в каталоге`
-      : `Собрали корзину по заказу №${order.id} 🌷 Проверьте и оформляйте!`);
-  } catch { /* не получилось — покупатель соберёт корзину сам */ }
+    showAlert(
+      missingCount
+        ? `Собрали корзину по заказу №${order.id} 🌷 ${missingCount} ${pluralize(missingCount, ['позиции', 'позиций', 'позиций'])} уже нет в наличии — выберите замену в каталоге`
+        : `Собрали корзину по заказу №${order.id} 🌷 Проверьте и оформляйте!`,
+    );
+  } catch {
+    /* не получилось — покупатель соберёт корзину сам */
+  }
 }
 
 export const repeatOrderActions = {

@@ -4,7 +4,9 @@ const assert = require('node:assert/strict');
 const testHelpers = require('./test-helpers');
 
 let shop;
-before(async () => { shop = await testHelpers.start(); });
+before(async () => {
+  shop = await testHelpers.start();
+});
 
 test('поддельная и просроченная подпись Telegram отклоняются', async () => {
   const forgedInitData = testHelpers.initData(7001).replace(/hash=[0-9a-f]+/, 'hash=' + '0'.repeat(64));
@@ -12,7 +14,9 @@ test('поддельная и просроченная подпись Telegram �
   assert.equal(forged.status, 401);
   assert.deepEqual(forged.body, { error: 'Откройте магазин через Telegram' });
   const twoDaysAgo = Math.floor(Date.now() / 1000) - 2 * 86400;
-  const expired = await shop.call(null, 'GET', '/api/my-orders', undefined, { 'X-Init-Data': testHelpers.initData(7001, twoDaysAgo) });
+  const expired = await shop.call(null, 'GET', '/api/my-orders', undefined, {
+    'X-Init-Data': testHelpers.initData(7001, twoDaysAgo),
+  });
   assert.equal(expired.status, 401);
   assert.equal((await shop.call(7001, 'GET', '/api/my-orders')).status, 200);
 });
@@ -29,7 +33,9 @@ test('админка — только владелице', async () => {
 
 test('кривой JSON — короткая ошибка без стека; витрина и админка отдаются как статика', async () => {
   const response = await fetch(shop.base + '/api/orders', {
-    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Init-Data': testHelpers.initData(7003) }, body: '{"items":',
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Init-Data': testHelpers.initData(7003) },
+    body: '{"items":',
   });
   assert.equal(response.status, 400);
   const body = await response.json();

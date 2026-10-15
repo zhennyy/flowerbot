@@ -9,7 +9,10 @@ const wordStem = (word) => {
   if (word.length > 3) return word.slice(0, -1);
   return word;
 };
-const splitWords = (text) => normalize(text).split(/[^a-zа-я0-9]+/i).filter(Boolean);
+const splitWords = (text) =>
+  normalize(text)
+    .split(/[^a-zа-я0-9]+/i)
+    .filter(Boolean);
 
 export function matchesSearch(product) {
   const queryWords = splitWords(state.searchQuery);
@@ -22,7 +25,9 @@ const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /** Текст для HTML с подсвеченными (<mark>) найденными словами */
 export function highlightMatches(text) {
-  const stems = splitWords(state.searchQuery).map(wordStem).filter((stem) => stem.length > 1);
+  const stems = splitWords(state.searchQuery)
+    .map(wordStem)
+    .filter((stem) => stem.length > 1);
   const escapedText = escapeHtml(text);
   if (!stems.length) return escapedText;
   const pattern = new RegExp('(' + stems.map((stem) => escapeRegExp(stem).replace(/е/g, '[её]')).join('|') + ')', 'gi');

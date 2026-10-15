@@ -26,21 +26,34 @@ function createZip(files) {
     const fileData = Buffer.isBuffer(file.data) ? file.data : Buffer.from(file.data, 'utf8');
     const checksum = crc32(fileData);
     const localHeader = Buffer.alloc(30);
-    localHeader.writeUInt32LE(0x04034b50, 0); localHeader.writeUInt16LE(20, 4); localHeader.writeUInt16LE(0x0800, 6); // utf-8 имена
-    localHeader.writeUInt32LE(checksum, 14); localHeader.writeUInt32LE(fileData.length, 18); localHeader.writeUInt32LE(fileData.length, 22);
+    localHeader.writeUInt32LE(0x04034b50, 0);
+    localHeader.writeUInt16LE(20, 4);
+    localHeader.writeUInt16LE(0x0800, 6); // utf-8 имена
+    localHeader.writeUInt32LE(checksum, 14);
+    localHeader.writeUInt32LE(fileData.length, 18);
+    localHeader.writeUInt32LE(fileData.length, 22);
     localHeader.writeUInt16LE(fileName.length, 26);
     localParts.push(localHeader, fileName, fileData);
     const centralHeader = Buffer.alloc(46);
-    centralHeader.writeUInt32LE(0x02014b50, 0); centralHeader.writeUInt16LE(20, 4); centralHeader.writeUInt16LE(20, 6); centralHeader.writeUInt16LE(0x0800, 8);
-    centralHeader.writeUInt32LE(checksum, 16); centralHeader.writeUInt32LE(fileData.length, 20); centralHeader.writeUInt32LE(fileData.length, 24);
-    centralHeader.writeUInt16LE(fileName.length, 28); centralHeader.writeUInt32LE(offset, 42);
+    centralHeader.writeUInt32LE(0x02014b50, 0);
+    centralHeader.writeUInt16LE(20, 4);
+    centralHeader.writeUInt16LE(20, 6);
+    centralHeader.writeUInt16LE(0x0800, 8);
+    centralHeader.writeUInt32LE(checksum, 16);
+    centralHeader.writeUInt32LE(fileData.length, 20);
+    centralHeader.writeUInt32LE(fileData.length, 24);
+    centralHeader.writeUInt16LE(fileName.length, 28);
+    centralHeader.writeUInt32LE(offset, 42);
     centralDirectory.push(centralHeader, fileName);
     offset += localHeader.length + fileName.length + fileData.length;
   }
   const centralDirectoryBuffer = Buffer.concat(centralDirectory);
   const endRecord = Buffer.alloc(22);
-  endRecord.writeUInt32LE(0x06054b50, 0); endRecord.writeUInt16LE(files.length, 8); endRecord.writeUInt16LE(files.length, 10);
-  endRecord.writeUInt32LE(centralDirectoryBuffer.length, 12); endRecord.writeUInt32LE(offset, 16);
+  endRecord.writeUInt32LE(0x06054b50, 0);
+  endRecord.writeUInt16LE(files.length, 8);
+  endRecord.writeUInt16LE(files.length, 10);
+  endRecord.writeUInt32LE(centralDirectoryBuffer.length, 12);
+  endRecord.writeUInt32LE(offset, 16);
   return Buffer.concat([...localParts, centralDirectoryBuffer, endRecord]);
 }
 
@@ -50,11 +63,18 @@ function toCsv(rows) {
   const columnNames = Object.keys(rows[0]);
   const formatCell = (value) => {
     let cellText = value == null ? '' : String(value);
-    const looksLikeFormula = typeof value === 'string' && /^[=+\-@\t\r]/.test(cellText) && !/^[+\-]?[\d\s().-]+$/.test(cellText); // телефоны не трогаем
+    const looksLikeFormula =
+      typeof value === 'string' && /^[-=+@\t\r]/.test(cellText) && !/^[+-]?[\d\s().-]+$/.test(cellText); // телефоны не трогаем
     if (looksLikeFormula) cellText = "'" + cellText;
     return /[";\n]/.test(cellText) ? `"${cellText.replace(/"/g, '""')}"` : cellText;
   };
-  return '﻿' + [columnNames.join(';'), ...rows.map((row) => columnNames.map((columnName) => formatCell(row[columnName])).join(';'))].join('\n');
+  return (
+    '﻿' +
+    [
+      columnNames.join(';'),
+      ...rows.map((row) => columnNames.map((columnName) => formatCell(row[columnName])).join(';')),
+    ].join('\n')
+  );
 }
 
 // Путь к файлу фото, если ссылка ведёт на наше фото (/uploads/… или /photos/…) и файл на месте
@@ -68,7 +88,9 @@ function findPhotoFile(photoUrl, directories) {
 // «Утро в Провансе (M) × 1, Роза красная, 60 см × 11»
 function orderItemsText(order) {
   try {
-    return JSON.parse(order.items).map((orderItem) => `${orderItem.name}${orderItem.size ? ' (' + orderItem.size + ')' : ''} × ${orderItem.qty}`).join(', ');
+    return JSON.parse(order.items)
+      .map((orderItem) => `${orderItem.name}${orderItem.size ? ' (' + orderItem.size + ')' : ''} × ${orderItem.qty}`)
+      .join(', ');
   } catch {
     return '';
   }
@@ -87,17 +109,36 @@ async function makeBackup({ uploadsDir, photosDir }) {
   for (const product of products) {
     const photoFile = findPhotoFile(product.photo_url, photoDirectories);
     if (!photoFile) continue;
-    const archiveName = photoFile.fileName.startsWith(product.id + '-') ? photoFile.fileName : `${product.id}-${photoFile.fileName}`;
+    const archiveName = photoFile.fileName.startsWith(product.id + '-')
+      ? photoFile.fileName
+      : `${product.id}-${photoFile.fileName}`;
     archiveFiles.push({ name: `photos/${archiveName}`, data: fs.readFileSync(photoFile.filePath) });
   }
   const timestamp = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 16).replace('T', '_').replace(':', '-');
   const bouquetRows = products.map((product) => ({
-    id: product.id, name: product.name, category: product.category, price_rub: product.price, stock: product.stock, in_stock: product.in_stock, description: product.description,
+    id: product.id,
+    name: product.name,
+    category: product.category,
+    price_rub: product.price,
+    stock: product.stock,
+    in_stock: product.in_stock,
+    description: product.description,
   }));
   const orderRows = allOrders.map((order) => ({
-    id: order.id, created_at: order.created_at, status: order.status, payment: order.payment_status, customer: order.customer_name, phone: order.phone,
-    address: order.address, date: order.delivery_date, time: order.delivery_time, items: orderItemsText(order), total_rub: order.total, delivery_rub: order.delivery_fee,
-    rating: order.rating, review: order.review_text,
+    id: order.id,
+    created_at: order.created_at,
+    status: order.status,
+    payment: order.payment_status,
+    customer: order.customer_name,
+    phone: order.phone,
+    address: order.address,
+    date: order.delivery_date,
+    time: order.delivery_time,
+    items: orderItemsText(order),
+    total_rub: order.total,
+    delivery_rub: order.delivery_fee,
+    rating: order.rating,
+    review: order.review_text,
   }));
   archiveFiles.push(
     { name: 'bouquets.json', data: JSON.stringify(products, null, 2) },
@@ -107,7 +148,10 @@ async function makeBackup({ uploadsDir, photosDir }) {
     { name: 'messages.json', data: JSON.stringify(messages, null, 2) },
     { name: 'reminders.json', data: JSON.stringify(reminders, null, 2) },
     { name: 'settings.json', data: JSON.stringify(settings, null, 2) },
-    { name: 'README.txt', data: `Резервная копия «Флёр» от ${timestamp.replace('_', ' ')} (МСК).\n\nbouquets.csv и orders.csv открываются в Excel/Numbers.\nphotos/ — фото букетов (номер в начале — id товара).\n\nВ архиве телефоны и адреса покупателей — храните его у себя и не выкладывайте на GitHub.\n` },
+    {
+      name: 'README.txt',
+      data: `Резервная копия «Флёр» от ${timestamp.replace('_', ' ')} (МСК).\n\nbouquets.csv и orders.csv открываются в Excel/Numbers.\nphotos/ — фото букетов (номер в начале — id товара).\n\nВ архиве телефоны и адреса покупателей — храните его у себя и не выкладывайте на GitHub.\n`,
+    },
   );
   return {
     buffer: createZip(archiveFiles),

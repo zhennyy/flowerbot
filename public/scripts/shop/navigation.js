@@ -18,7 +18,8 @@ export function goToPage(page) {
   if (page === 'ordersPage') loadMyOrders(true);
   state.currentPage = page;
   if (page === 'cartPage') renderCartPage();
-  if (page === 'checkoutPage') { // корзина могла измениться — пересчитаем доставку
+  if (page === 'checkoutPage') {
+    // корзина могла измениться — пересчитаем доставку
     checkoutState.quote = null;
     prepareCheckout();
   }

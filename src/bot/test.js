@@ -14,14 +14,23 @@ let orderId;
 const lastText = (chatId) => testHelpers.lastTextTo(chatId);
 const buttonsOf = (call) => (call.payload.reply_markup?.inline_keyboard || []).flat();
 const lastButtons = (chatId) => buttonsOf(testHelpers.sentTo(chatId).at(-1));
-const sender = (chatId) => ({ id: chatId, is_bot: false, first_name: chatId === OWNER_ID ? 'Флорист' : 'Анна', username: chatId === OWNER_ID ? undefined : 'anna' });
+const sender = (chatId) => ({
+  id: chatId,
+  is_bot: false,
+  first_name: chatId === OWNER_ID ? 'Флорист' : 'Анна',
+  username: chatId === OWNER_ID ? undefined : 'anna',
+});
 
 function sendText(chatId, text) {
   const commandMatch = text.match(/^\/\w+/);
   return bot.handleUpdate({
     update_id: ++updateCounter,
     message: {
-      message_id: ++messageCounter, date: Math.floor(Date.now() / 1000), text, from: sender(chatId), chat: { id: chatId, type: 'private' },
+      message_id: ++messageCounter,
+      date: Math.floor(Date.now() / 1000),
+      text,
+      from: sender(chatId),
+      chat: { id: chatId, type: 'private' },
       ...(commandMatch ? { entities: [{ type: 'bot_command', offset: 0, length: commandMatch[0].length }] } : {}),
     },
   });
@@ -31,8 +40,15 @@ function sendPhoto(chatId, caption) {
   return bot.handleUpdate({
     update_id: ++updateCounter,
     message: {
-      message_id: ++messageCounter, date: Math.floor(Date.now() / 1000), from: sender(chatId), chat: { id: chatId, type: 'private' },
-      photo: [{ file_id: 'small-photo', width: 90, height: 90 }, { file_id: 'big-photo', width: 1280, height: 1280 }], ...(caption ? { caption } : {}),
+      message_id: ++messageCounter,
+      date: Math.floor(Date.now() / 1000),
+      from: sender(chatId),
+      chat: { id: chatId, type: 'private' },
+      photo: [
+        { file_id: 'small-photo', width: 90, height: 90 },
+        { file_id: 'big-photo', width: 1280, height: 1280 },
+      ],
+      ...(caption ? { caption } : {}),
     },
   });
 }
@@ -41,8 +57,16 @@ function pressButton(chatId, callbackData) {
   return bot.handleUpdate({
     update_id: ++updateCounter,
     callback_query: {
-      id: String(updateCounter), data: callbackData, chat_instance: '1', from: sender(chatId),
-      message: { message_id: ++messageCounter, date: Math.floor(Date.now() / 1000), chat: { id: chatId, type: 'private' }, text: '…' },
+      id: String(updateCounter),
+      data: callbackData,
+      chat_instance: '1',
+      from: sender(chatId),
+      message: {
+        message_id: ++messageCounter,
+        date: Math.floor(Date.now() / 1000),
+        chat: { id: chatId, type: 'private' },
+        text: '…',
+      },
     },
   });
 }
@@ -72,10 +96,21 @@ test('/start, /myid и /admin', async () => {
 
 test('новый заказ: владелице — с кнопками статусов, покупателю — «принят» с напоминанием', async () => {
   const ownerNote = testHelpers.sentTo(OWNER_ID).find((call) => /Новый заказ!/.test(testHelpers.textOf(call)));
-  assert.match(testHelpers.textOf(ownerNote), new RegExp(`Заказ №${orderId}[\\s\\S]*👤 Анна @anna · \\+7 900 123-45-67`));
-  assert.deepEqual(buttonsOf(ownerNote).map((button) => button.callback_data).slice(0, 2), [`st:${orderId}:confirmed`, `st:${orderId}:assembling`]);
+  assert.match(
+    testHelpers.textOf(ownerNote),
+    new RegExp(`Заказ №${orderId}[\\s\\S]*👤 Анна @anna · \\+7 900 123-45-67`),
+  );
+  assert.deepEqual(
+    buttonsOf(ownerNote)
+      .map((button) => button.callback_data)
+      .slice(0, 2),
+    [`st:${orderId}:confirmed`, `st:${orderId}:assembling`],
+  );
   const buyerNote = testHelpers.sentTo(BUYER_ID).find((call) => /принят!/.test(testHelpers.textOf(call)));
-  assert.deepEqual(buttonsOf(buyerNote).map((button) => button.callback_data), [`rem:${orderId}`, `ask:${orderId}`]);
+  assert.deepEqual(
+    buttonsOf(buyerNote).map((button) => button.callback_data),
+    [`rem:${orderId}`, `ask:${orderId}`],
+  );
 });
 
 test('кнопки статусов: только владелица; неизвестный статус не ломает заказ', async () => {
@@ -85,16 +120,26 @@ test('кнопки статусов: только владелица; неизв
   assert.equal((await shop.findOrder(orderId)).status, 'new');
   await pressButton(OWNER_ID, `st:${orderId}:confirmed`);
   assert.equal((await shop.findOrder(orderId)).status, 'confirmed');
-  assert.ok(testHelpers.telegramCalls.some((call) => call.method === 'editMessageText' && /Подтверждён/.test(call.payload.text)));
+  assert.ok(
+    testHelpers.telegramCalls.some(
+      (call) => call.method === 'editMessageText' && /Подтверждён/.test(call.payload.text),
+    ),
+  );
 });
 
 test('вопрос флористу и ответ владелицы через кнопку «Ответить»', async () => {
   await pressButton(BUYER_ID, `ask:${orderId}`);
   await sendText(BUYER_ID, 'Можно добавить <ленту>?');
-  assert.match(lastText(OWNER_ID), new RegExp(`💬 Анна \\(@anna\\) · заказ №${orderId}:\\n\\nМожно добавить &lt;ленту&gt;\\?`));
+  assert.match(
+    lastText(OWNER_ID),
+    new RegExp(`💬 Анна \\(@anna\\) · заказ №${orderId}:\\n\\nМожно добавить &lt;ленту&gt;\\?`),
+  );
   assert.equal(lastButtons(OWNER_ID)[0].callback_data, `reply:${BUYER_ID}:${orderId}`);
   assert.equal(lastText(BUYER_ID), 'Передала флористу ✅ Ответ придёт сюда, в этот чат');
-  const saved = await shop.database.message.findFirst({ where: { user_id: BUYER_ID, direction: 'in' }, orderBy: { id: 'desc' } });
+  const saved = await shop.database.message.findFirst({
+    where: { user_id: BUYER_ID, direction: 'in' },
+    orderBy: { id: 'desc' },
+  });
   assert.equal(saved.order_id, orderId);
 
   await sendText(OWNER_ID, 'просто текст');
@@ -103,7 +148,10 @@ test('вопрос флористу и ответ владелицы через 
   await sendText(OWNER_ID, 'Конечно, добавим');
   assert.equal(lastText(BUYER_ID), `💬 <b>Флорист «Флёр»</b> · заказ №${orderId}:\n\nКонечно, добавим`);
   assert.equal(lastText(OWNER_ID), 'Ответ отправлен ✅');
-  assert.equal((await shop.database.message.findFirst({ where: { user_id: BUYER_ID }, orderBy: { id: 'desc' } })).direction, 'out');
+  assert.equal(
+    (await shop.database.message.findFirst({ where: { user_id: BUYER_ID }, orderBy: { id: 'desc' } })).direction,
+    'out',
+  );
 });
 
 test('фото букета: владелица подписывает номером заказа, покупатель просит изменить, затем одобряет', async () => {
@@ -155,7 +203,10 @@ test('оценка после доставки: низкая — просим р
   assert.match(lastText(BUYER_ID), /Расскажите, что пошло не так/);
   await sendText(BUYER_ID, 'Курьер опоздал');
   assert.equal((await shop.findOrder(orderId)).review_text, 'Курьер опоздал');
-  assert.match(lastText(OWNER_ID), new RegExp(`📝 Отзыв к заказу №${orderId} от Анна \\(@anna\\):\\n\\nКурьер опоздал`));
+  assert.match(
+    lastText(OWNER_ID),
+    new RegExp(`📝 Отзыв к заказу №${orderId} от Анна \\(@anna\\):\\n\\nКурьер опоздал`),
+  );
   assert.equal(lastText(BUYER_ID), 'Спасибо, что рассказали 🙏 Флорист свяжется с вами');
 });
 
@@ -165,6 +216,11 @@ test('«Мои заказы» и сводка владелицы на завтр
   await sendText(BUYER_ID, '/tomorrow');
   assert.equal(lastText(BUYER_ID), 'Команда только для владелицы 🌷');
   await sendText(OWNER_ID, '/tomorrow');
-  assert.match(lastText(OWNER_ID), new RegExp(`^🌙 Завтра — \\d\\d\\.\\d\\d\\.\\d{4}\\n\\n<b>12:00–15:00</b> · №${orderId} 🌷\\n   Утро в Провансе \\(S\\) ×1`));
+  assert.match(
+    lastText(OWNER_ID),
+    new RegExp(
+      `^🌙 Завтра — \\d\\d\\.\\d\\d\\.\\d{4}\\n\\n<b>12:00–15:00</b> · №${orderId} 🌷\\n   Утро в Провансе \\(S\\) ×1`,
+    ),
+  );
   assert.match(lastText(OWNER_ID), /Итого: 1 доставка на 2\s780 ₽/);
 });

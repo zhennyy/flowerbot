@@ -6,15 +6,16 @@ const SHOP = { lat: 59.9311, lon: 30.3609, name: 'пл. Восстания' };
 
 // Тарифы по умолчанию — их можно поменять в админке (вкладка «Доставка»)
 const DEFAULT_TARIFF = {
-  city: [                       // Санкт-Петербург: «до N км — цена»
+  city: [
+    // Санкт-Петербург: «до N км — цена»
     { km: 3, price: 290 },
     { km: 7, price: 390 },
     { km: 12, price: 490 },
     { km: 20, price: 690 },
-    { km: 999, price: 890 },    // всё, что дальше, но ещё в городе
+    { km: 999, price: 890 }, // всё, что дальше, но ещё в городе
   ],
   region: { base: 990, perKm: 40, fromKm: 20 }, // Ленобласть: 990 ₽ + 40 ₽ за каждый км дальше 20 км
-  freeFrom: 0,                  // бесплатная доставка от суммы заказа (0 = выключено)
+  freeFrom: 0, // бесплатная доставка от суммы заказа (0 = выключено)
 };
 const MAX_CITY_ZONES = 10;
 const getTariff = () => getSetting('delivery_tariff', DEFAULT_TARIFF);
@@ -30,7 +31,11 @@ function cleanTariff(tariffForm = {}) {
   if (!city.length) throw Object.assign(new Error('Добавьте хотя бы одну зону по городу'), { expose: true });
   return {
     city,
-    region: { base: toWholeNumber(tariffForm.region?.base), perKm: toWholeNumber(tariffForm.region?.perKm), fromKm: toWholeNumber(tariffForm.region?.fromKm) },
+    region: {
+      base: toWholeNumber(tariffForm.region?.base),
+      perKm: toWholeNumber(tariffForm.region?.perKm),
+      fromKm: toWholeNumber(tariffForm.region?.fromKm),
+    },
     freeFrom: toWholeNumber(tariffForm.freeFrom),
   };
 }
@@ -41,8 +46,9 @@ function distanceKm(fromPoint, toPoint) {
   const toRadians = (degrees) => (degrees * Math.PI) / 180;
   const latitudeDelta = toRadians(toPoint.lat - fromPoint.lat);
   const longitudeDelta = toRadians(toPoint.lon - fromPoint.lon);
-  const haversine = Math.sin(latitudeDelta / 2) ** 2
-    + Math.cos(toRadians(fromPoint.lat)) * Math.cos(toRadians(toPoint.lat)) * Math.sin(longitudeDelta / 2) ** 2;
+  const haversine =
+    Math.sin(latitudeDelta / 2) ** 2 +
+    Math.cos(toRadians(fromPoint.lat)) * Math.cos(toRadians(toPoint.lat)) * Math.sin(longitudeDelta / 2) ** 2;
   return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(haversine));
 }
 
@@ -64,29 +70,46 @@ function geocode(query) {
   const cacheKey = query.toLowerCase().replace(/\s+/g, ' ').trim();
   if (foundPlaces.has(cacheKey)) return Promise.resolve(foundPlaces.get(cacheKey));
   // очередь не растёт бесконечно
-  if (queuedRequests >= MAX_QUEUED_REQUESTS) return Promise.reject(new Error('Сервис адресов перегружен — попробуйте через минуту'));
+  if (queuedRequests >= MAX_QUEUED_REQUESTS)
+    return Promise.reject(new Error('Сервис адресов перегружен — попробуйте через минуту'));
   queuedRequests++;
   const geocoderJob = geocoderQueue.then(async () => {
-    const url = GEOCODER_URL + '?' + new URLSearchParams({
-      q: query, format: 'jsonv2', addressdetails: '1', limit: '1', 'accept-language': 'ru', countrycodes: 'ru',
-      viewbox: '27.8,61.4,35.7,58.4', bounded: '1', // только СПб и Ленобласть
-    });
+    const url =
+      GEOCODER_URL +
+      '?' +
+      new URLSearchParams({
+        q: query,
+        format: 'jsonv2',
+        addressdetails: '1',
+        limit: '1',
+        'accept-language': 'ru',
+        countrycodes: 'ru',
+        viewbox: '27.8,61.4,35.7,58.4',
+        bounded: '1', // только СПб и Ленобласть
+      });
     const geocoderResponse = await fetch(url, {
       headers: { 'User-Agent': 'FlerFlowerShopBot/1.0 (Telegram flower shop)' },
       signal: AbortSignal.timeout(GEOCODER_TIMEOUT_MS),
     });
     if (!geocoderResponse.ok) throw new Error('geocoder ' + geocoderResponse.status);
     const [bestMatch] = await geocoderResponse.json();
-    const place = bestMatch ? {
-      lat: Number(bestMatch.lat), lon: Number(bestMatch.lon),
-      state: bestMatch.address?.state || bestMatch.address?.city || '',
-      label: bestMatch.display_name.split(', ').slice(0, 4).join(', '),
-    } : null;
+    const place = bestMatch
+      ? {
+          lat: Number(bestMatch.lat),
+          lon: Number(bestMatch.lon),
+          state: bestMatch.address?.state || bestMatch.address?.city || '',
+          label: bestMatch.display_name.split(', ').slice(0, 4).join(', '),
+        }
+      : null;
     if (foundPlaces.size > MAX_CACHED_ADDRESSES) foundPlaces.clear();
     foundPlaces.set(cacheKey, place);
     return place;
   });
-  geocoderJob.finally(() => { queuedRequests--; }).catch(() => {});
+  geocoderJob
+    .finally(() => {
+      queuedRequests--;
+    })
+    .catch(() => {});
   geocoderQueue = geocoderJob.catch(() => {}).then(() => sleep(GEOCODER_PAUSE_MS)); // пауза между запросами
   return geocoderJob;
 }
@@ -100,7 +123,8 @@ async function quote(address, zone, goodsTotal = 0) {
 
   const inSaintPetersburg = /Санкт-Петербург/i.test(place.state);
   const inLeningradRegion = /Ленинградская/i.test(place.state);
-  if (!inSaintPetersburg && !inLeningradRegion) return { ok: false, error: 'Доставляем только по Санкт-Петербургу и Ленобласти' };
+  if (!inSaintPetersburg && !inLeningradRegion)
+    return { ok: false, error: 'Доставляем только по Санкт-Петербургу и Ленобласти' };
 
   const km = Math.round(distanceKm(SHOP, place) * 10) / 10;
   const tariff = await getTariff();

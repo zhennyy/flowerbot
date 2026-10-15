@@ -21,4 +21,11 @@ const slotsValidator = createValidator((request) => {
 
 const orderIdValidator = createValidator((request) => ({ orderId: parsePositiveId(request.params.id) }));
 
-module.exports = { deliveryQuoteValidator, slotsValidator, orderIdValidator, readZone, MAX_ADDRESS_LENGTH, MIN_ADDRESS_LENGTH };
+module.exports = {
+  deliveryQuoteValidator,
+  slotsValidator,
+  orderIdValidator,
+  readZone,
+  MAX_ADDRESS_LENGTH,
+  MIN_ADDRESS_LENGTH,
+};

@@ -1,165 +1,225 @@
 <!doctype html>
 <html lang="ru">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Флёр — админка</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles/theme.css">
-<link rel="stylesheet" href="styles/admin/base.css">
-<link rel="stylesheet" href="styles/admin/forms.css">
-<link rel="stylesheet" href="styles/admin/orders.css">
-<link rel="stylesheet" href="styles/admin/products.css">
-<link rel="stylesheet" href="styles/admin/chats.css">
-<link rel="stylesheet" href="styles/admin/stats.css">
-<link rel="stylesheet" href="styles/admin/desktop.css">
-<script type="module" src="scripts/admin/main.js"></script>
-</head>
-<body>
-<header>Флёр<span>.</span> админка</header>
-<div class="tabs">
-  <button class="tab active" data-action="switch-tab" data-tab="orders"><i>📦</i>Заказы<span class="count" id="newCount" hidden></span></button>
-  <button class="tab" data-action="switch-tab" data-tab="chats"><i>💬</i>Чаты<span class="count" id="chatCount" hidden></span></button>
-  <button class="tab" data-action="switch-tab" data-tab="stats"><i>📊</i>Статистика</button>
-  <button class="tab" data-action="switch-tab" data-tab="products"><i>💐</i>Букеты</button>
-  <button class="tab" data-action="switch-tab" data-tab="delivery"><i>🚚</i>Доставка</button>
-</div>
-<div id="chatsView" hidden>
-  <div class="list" id="chatList"></div>
-</div>
-
-<!-- Открытый диалог с покупателем -->
-<section class="thread" id="thread" hidden>
-  <div class="thead">
-    <button class="back" data-action="close-thread" aria-label="Назад">←</button>
-    <div class="who"><div class="nm" id="tName"></div><div class="un" id="tUser"></div></div>
-  </div>
-  <div class="torders" id="tOrders"></div>
-  <div class="msgs" id="msgs"></div>
-  <div class="composer">
-    <div class="quick" id="quick"></div>
-    <div class="row2">
-      <textarea id="reply" rows="1" maxlength="3000" placeholder="Сообщение покупателю…"></textarea>
-      <button class="send" id="sendBtn" data-action="send-reply" aria-label="Отправить">➤</button>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <title>Флёр — админка</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles/theme.css" />
+    <link rel="stylesheet" href="styles/admin/base.css" />
+    <link rel="stylesheet" href="styles/admin/forms.css" />
+    <link rel="stylesheet" href="styles/admin/orders.css" />
+    <link rel="stylesheet" href="styles/admin/products.css" />
+    <link rel="stylesheet" href="styles/admin/chats.css" />
+    <link rel="stylesheet" href="styles/admin/stats.css" />
+    <link rel="stylesheet" href="styles/admin/desktop.css" />
+    <script type="module" src="scripts/admin/main.js"></script>
+  </head>
+  <body>
+    <header>Флёр<span>.</span> админка</header>
+    <!-- Кнопки со счётчиком — в одну строку: перенос внутри кнопки добавляет лишний отступ под счётчиком -->
+    <div class="tabs">
+      <!-- prettier-ignore -->
+      <button class="tab active" data-action="switch-tab" data-tab="orders"><i>📦</i>Заказы<span class="count" id="newCount" hidden></span></button>
+      <!-- prettier-ignore -->
+      <button class="tab" data-action="switch-tab" data-tab="chats"><i>💬</i>Чаты<span class="count" id="chatCount" hidden></span></button>
+      <button class="tab" data-action="switch-tab" data-tab="stats"><i>📊</i>Статистика</button>
+      <button class="tab" data-action="switch-tab" data-tab="products"><i>💐</i>Букеты</button>
+      <button class="tab" data-action="switch-tab" data-tab="delivery"><i>🚚</i>Доставка</button>
     </div>
-  </div>
-</section>
-
-<input type="file" id="bouquetFile" accept="image/*" hidden>
-<div id="ordersView">
-  <div class="list"><input type="text" id="orderSearch" class="osearch" placeholder="🔍 Номер, имя, телефон, адрес…"></div>
-  <div class="filters" id="orderFilters"></div>
-  <div class="list" id="orders"></div>
-</div>
-<div id="productsView" hidden>
-  <div class="product-toolbar"><button class="add" data-action="new-product">＋ Добавить букет</button><button class="add" data-action="make-backup">📦 Копия</button></div>
-  <div class="list" id="products"></div>
-</div>
-
-<div id="statsView" hidden>
-  <div class="period" id="period"></div>
-  <div class="kpis" id="kpis"></div>
-  <div class="list">
-    <div class="card"><div class="num">Выручка по дням</div>
-      <div class="chart" id="chart" role="img"></div><div class="axis" id="axis"></div>
-      <div class="tip" id="tip">Нажмите на столбик, чтобы увидеть день</div></div>
-    <div class="card"><div class="num">Топ товаров</div><div id="top"></div></div>
-    <div class="card"><div class="num">Из чего выручка</div><div id="split"></div></div>
-    <div class="card"><div class="num">Заказы по статусам</div><div id="bystatus"></div></div>
-    <div class="card"><div class="num">Отзывы и открытки</div><div class="minis" id="quality"></div></div>
-  </div>
-</div>
-
-<div id="deliveryView" hidden>
-  <div class="list">
-    <div class="card">
-      <div class="num">Санкт-Петербург</div>
-      <div class="meta">Расстояние по прямой от пл. Восстания</div>
-      <div id="tiers"></div>
-      <div class="btns"><button type="button" data-action="add-tier">＋ Добавить зону</button></div>
+    <div id="chatsView" hidden>
+      <div class="list" id="chatList"></div>
     </div>
-    <div class="card">
-      <div class="num">Ленинградская область</div>
-      <div class="two">
-        <div><label for="r_base">Базовая цена, ₽</label><input type="number" id="r_base" min="0"></div>
-        <div><label for="r_per">За каждый км, ₽</label><input type="number" id="r_per" min="0"></div>
+
+    <!-- Открытый диалог с покупателем -->
+    <section class="thread" id="thread" hidden>
+      <div class="thead">
+        <button class="back" data-action="close-thread" aria-label="Назад">←</button>
+        <div class="who">
+          <div class="nm" id="tName"></div>
+          <div class="un" id="tUser"></div>
+        </div>
       </div>
-      <label for="r_from">Считать км начиная с, км</label><input type="number" id="r_from" min="0">
-      <div class="meta" id="r_example"></div>
-    </div>
-    <div class="card">
-      <div class="num">Бесплатная доставка</div>
-      <label for="free_from">От суммы заказа, ₽ (0 — выключено)</label><input type="number" id="free_from" min="0">
-    </div>
-    <div class="error" id="dError"></div>
-    <button class="big" data-action="save-delivery">Сохранить тарифы</button>
+      <div class="torders" id="tOrders"></div>
+      <div class="msgs" id="msgs"></div>
+      <div class="composer">
+        <div class="quick" id="quick"></div>
+        <div class="row2">
+          <textarea id="reply" rows="1" maxlength="3000" placeholder="Сообщение покупателю…"></textarea>
+          <button class="send" id="sendBtn" data-action="send-reply" aria-label="Отправить">➤</button>
+        </div>
+      </div>
+    </section>
 
-    <div class="card spaced">
-      <div class="num">📅 Выходные дни</div>
-      <div class="meta">В эти даты витрина не даст оформить доставку</div>
-      <div class="two"><input type="date" id="c_date"><button type="button" class="upload inline" data-action="add-closed-date">＋ Закрыть дату</button></div>
-      <div id="closedList"></div>
+    <input type="file" id="bouquetFile" accept="image/*" hidden />
+    <div id="ordersView">
+      <div class="list">
+        <input type="text" id="orderSearch" class="osearch" placeholder="🔍 Номер, имя, телефон, адрес…" />
+      </div>
+      <div class="filters" id="orderFilters"></div>
+      <div class="list" id="orders"></div>
     </div>
-    <div class="card">
-      <div class="num">⏱ Лимит заказов на интервал</div>
-      <div class="meta">Например, перед 8 Марта поставьте 10 — когда на «12:00–15:00» наберётся 10 заказов, интервал станет «нет мест». 0 — без лимита</div>
-      <input type="number" id="c_limit" min="0" max="99" step="1">
+    <div id="productsView" hidden>
+      <div class="product-toolbar">
+        <button class="add" data-action="new-product">＋ Добавить букет</button
+        ><button class="add" data-action="make-backup">📦 Копия</button>
+      </div>
+      <div class="list" id="products"></div>
     </div>
-    <div class="error" id="cError"></div>
-    <button class="big" data-action="save-calendar">Сохранить календарь</button>
 
-    <div class="card spaced">
-      <div class="num">📸 Согласование фото букета</div>
-      <div class="meta">Сколько минут ждать ответа покупателя. На половине срока бот напомнит, а потом считает букет одобренным. 0 — ждать, пока не ответит</div>
-      <input type="number" id="ph_timeout" min="0" max="240" step="5">
+    <div id="statsView" hidden>
+      <div class="period" id="period"></div>
+      <div class="kpis" id="kpis"></div>
+      <div class="list">
+        <div class="card">
+          <div class="num">Выручка по дням</div>
+          <div class="chart" id="chart" role="img"></div>
+          <div class="axis" id="axis"></div>
+          <div class="tip" id="tip">Нажмите на столбик, чтобы увидеть день</div>
+        </div>
+        <div class="card">
+          <div class="num">Топ товаров</div>
+          <div id="top"></div>
+        </div>
+        <div class="card">
+          <div class="num">Из чего выручка</div>
+          <div id="split"></div>
+        </div>
+        <div class="card">
+          <div class="num">Заказы по статусам</div>
+          <div id="bystatus"></div>
+        </div>
+        <div class="card">
+          <div class="num">Отзывы и открытки</div>
+          <div class="minis" id="quality"></div>
+        </div>
+      </div>
     </div>
-    <button class="big" data-action="save-photo-timeout">Сохранить</button>
-  </div>
-</div>
 
-<div id="sheetWrap">
-  <div class="sheet-bg" data-action="close-editor"></div>
-  <form class="sheet" id="pForm">
-    <h2 id="pTitle">Новый букет</h2>
-    <label for="p_name">Название</label><input type="text" id="p_name" maxlength="80" required>
-    <label for="p_desc">Мини-описание</label><textarea id="p_desc" maxlength="200" placeholder="Состав, размер, упаковка"></textarea>
-    <div class="two">
-      <div><label for="p_price">Цена, ₽</label><input type="number" id="p_price" min="1" step="1" required></div>
-      <div><label for="p_cat">Категория</label><input type="text" id="p_cat" list="catList" maxlength="40" required></div>
-    </div>
-    <datalist id="catList"></datalist>
-    <label>Фото</label>
-    <div class="preview" id="p_preview">💐</div>
-    <div class="two">
-      <label class="upload">📷 Загрузить фото<input type="file" id="p_file" accept="image/*" hidden></label>
-      <button type="button" class="upload ghost" data-action="remove-product-photo">Убрать фото</button>
-    </div>
-    <details class="more"><summary>или вставить ссылку</summary>
-      <input type="text" id="p_photo" maxlength="500" placeholder="https://…"></details>
-    <div class="two">
-      <div><label for="p_badge">Метка</label>
-        <select id="p_badge"><option value="">— нет —</option><option>Хит</option><option>Новинка</option><option>Скидка</option><option>Сезон</option></select></div>
-      <div><label for="p_bg">Цвет фона</label><input type="color" id="p_bg" value="#f6e3ea"></div>
-    </div>
-    <div class="two">
-      <div><label for="p_qty">Остаток, шт</label><input type="number" id="p_qty" min="0" step="1" placeholder="не считать"></div>
-      <div><label for="p_emoji">Эмодзи без фото</label><input type="text" id="p_emoji" maxlength="8" placeholder="💐"></div>
-    </div>
-    <label class="toggle"><input type="checkbox" id="p_sizes_on"> Есть размеры (S / M / L)</label>
-    <div id="sizesBox" hidden>
-      <div id="sizeRows"></div>
-      <div class="btns"><button type="button" data-action="add-size">＋ Размер</button></div>
-    </div>
-    <label class="toggle"><input type="checkbox" id="p_unit"> Продаётся поштучно (цена за 1 шт)</label>
-    <div id="minBox" hidden><label for="p_min">Минимум в заказе, шт</label><input type="number" id="p_min" min="1" max="101" step="1" value="1"></div>
-    <label class="toggle"><input type="checkbox" id="p_addon"> Это дополнение — показывать в корзине «Добавить к заказу»</label>
-    <label class="toggle"><input type="checkbox" id="p_stock" checked> Показывать в витрине (в наличии)</label>
-    <div class="error" id="pError"></div>
-    <button class="big" type="submit">Сохранить</button>
-    <button class="del" type="button" id="pDelete" data-action="delete-product">Удалить букет</button>
-  </form>
-</div>
+    <div id="deliveryView" hidden>
+      <div class="list">
+        <div class="card">
+          <div class="num">Санкт-Петербург</div>
+          <div class="meta">Расстояние по прямой от пл. Восстания</div>
+          <div id="tiers"></div>
+          <div class="btns"><button type="button" data-action="add-tier">＋ Добавить зону</button></div>
+        </div>
+        <div class="card">
+          <div class="num">Ленинградская область</div>
+          <div class="two">
+            <div><label for="r_base">Базовая цена, ₽</label><input type="number" id="r_base" min="0" /></div>
+            <div><label for="r_per">За каждый км, ₽</label><input type="number" id="r_per" min="0" /></div>
+          </div>
+          <label for="r_from">Считать км начиная с, км</label><input type="number" id="r_from" min="0" />
+          <div class="meta" id="r_example"></div>
+        </div>
+        <div class="card">
+          <div class="num">Бесплатная доставка</div>
+          <label for="free_from">От суммы заказа, ₽ (0 — выключено)</label
+          ><input type="number" id="free_from" min="0" />
+        </div>
+        <div class="error" id="dError"></div>
+        <button class="big" data-action="save-delivery">Сохранить тарифы</button>
 
-</body>
+        <div class="card spaced">
+          <div class="num">📅 Выходные дни</div>
+          <div class="meta">В эти даты витрина не даст оформить доставку</div>
+          <div class="two">
+            <input type="date" id="c_date" /><button type="button" class="upload inline" data-action="add-closed-date">
+              ＋ Закрыть дату
+            </button>
+          </div>
+          <div id="closedList"></div>
+        </div>
+        <div class="card">
+          <div class="num">⏱ Лимит заказов на интервал</div>
+          <!-- У .meta white-space: pre-line — переносы строк в тексте видны, поэтому текст в одну строку -->
+          <!-- prettier-ignore -->
+          <div class="meta">Например, перед 8 Марта поставьте 10 — когда на «12:00–15:00» наберётся 10 заказов, интервал станет «нет мест». 0 — без лимита</div>
+          <input type="number" id="c_limit" min="0" max="99" step="1" />
+        </div>
+        <div class="error" id="cError"></div>
+        <button class="big" data-action="save-calendar">Сохранить календарь</button>
+
+        <div class="card spaced">
+          <div class="num">📸 Согласование фото букета</div>
+          <!-- prettier-ignore -->
+          <div class="meta">Сколько минут ждать ответа покупателя. На половине срока бот напомнит, а потом считает букет одобренным. 0 — ждать, пока не ответит</div>
+          <input type="number" id="ph_timeout" min="0" max="240" step="5" />
+        </div>
+        <button class="big" data-action="save-photo-timeout">Сохранить</button>
+      </div>
+    </div>
+
+    <div id="sheetWrap">
+      <div class="sheet-bg" data-action="close-editor"></div>
+      <form class="sheet" id="pForm">
+        <h2 id="pTitle">Новый букет</h2>
+        <label for="p_name">Название</label><input type="text" id="p_name" maxlength="80" required />
+        <label for="p_desc">Мини-описание</label
+        ><textarea id="p_desc" maxlength="200" placeholder="Состав, размер, упаковка"></textarea>
+        <div class="two">
+          <div><label for="p_price">Цена, ₽</label><input type="number" id="p_price" min="1" step="1" required /></div>
+          <div>
+            <label for="p_cat">Категория</label><input type="text" id="p_cat" list="catList" maxlength="40" required />
+          </div>
+        </div>
+        <datalist id="catList"></datalist>
+        <label>Фото</label>
+        <div class="preview" id="p_preview">💐</div>
+        <div class="two">
+          <label class="upload">📷 Загрузить фото<input type="file" id="p_file" accept="image/*" hidden /></label>
+          <button type="button" class="upload ghost" data-action="remove-product-photo">Убрать фото</button>
+        </div>
+        <details class="more">
+          <summary>или вставить ссылку</summary>
+          <input type="text" id="p_photo" maxlength="500" placeholder="https://…" />
+        </details>
+        <div class="two">
+          <div>
+            <label for="p_badge">Метка</label>
+            <select id="p_badge">
+              <option value="">— нет —</option>
+              <option>Хит</option>
+              <option>Новинка</option>
+              <option>Скидка</option>
+              <option>Сезон</option>
+            </select>
+          </div>
+          <div><label for="p_bg">Цвет фона</label><input type="color" id="p_bg" value="#f6e3ea" /></div>
+        </div>
+        <div class="two">
+          <div>
+            <label for="p_qty">Остаток, шт</label
+            ><input type="number" id="p_qty" min="0" step="1" placeholder="не считать" />
+          </div>
+          <div>
+            <label for="p_emoji">Эмодзи без фото</label
+            ><input type="text" id="p_emoji" maxlength="8" placeholder="💐" />
+          </div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="p_sizes_on" /> Есть размеры (S / M / L)</label>
+        <div id="sizesBox" hidden>
+          <div id="sizeRows"></div>
+          <div class="btns"><button type="button" data-action="add-size">＋ Размер</button></div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="p_unit" /> Продаётся поштучно (цена за 1 шт)</label>
+        <div id="minBox" hidden>
+          <label for="p_min">Минимум в заказе, шт</label
+          ><input type="number" id="p_min" min="1" max="101" step="1" value="1" />
+        </div>
+        <label class="toggle"
+          ><input type="checkbox" id="p_addon" /> Это дополнение — показывать в корзине «Добавить к заказу»</label
+        >
+        <label class="toggle"><input type="checkbox" id="p_stock" checked /> Показывать в витрине (в наличии)</label>
+        <div class="error" id="pError"></div>
+        <button class="big" type="submit">Сохранить</button>
+        <button class="del" type="button" id="pDelete" data-action="delete-product">Удалить букет</button>
+      </form>
+    </div>
+  </body>
 </html>

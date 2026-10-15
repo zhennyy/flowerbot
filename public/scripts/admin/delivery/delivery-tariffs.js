@@ -29,26 +29,38 @@ export async function loadDelivery() {
 }
 
 function renderTiers() {
-  getElement('tiers').innerHTML = cityTiers.map((tier, tierIndex) => `
+  getElement('tiers').innerHTML = cityTiers
+    .map(
+      (tier, tierIndex) => `
     <div class="tier">до <input type="number" min="1" value="${tier.km}" data-tier-index="${tierIndex}" data-tier-field="km"> км —
       <input type="number" min="0" value="${tier.price}" data-tier-index="${tierIndex}" data-tier-field="price"> ₽
-      <button class="x" type="button" data-action="remove-tier" data-tier-index="${tierIndex}" aria-label="Удалить">✕</button></div>`).join('');
+      <button class="x" type="button" data-action="remove-tier" data-tier-index="${tierIndex}" aria-label="Удалить">✕</button></div>`,
+    )
+    .join('');
 }
 
 // Пример цены для Ленобласти — сразу видно, что получится
 function showRegionExample() {
   const [basePrice, pricePerKm, fromKm] = REGION_FIELDS.map((id) => Number(getElement(id).value) || 0);
-  getElement('r_example').textContent = `Пример: ${EXAMPLE_DISTANCE_KM} км от магазина → ${formatRubles(basePrice + Math.max(0, EXAMPLE_DISTANCE_KM - fromKm) * pricePerKm)}`;
+  getElement('r_example').textContent =
+    `Пример: ${EXAMPLE_DISTANCE_KM} км от магазина → ${formatRubles(basePrice + Math.max(0, EXAMPLE_DISTANCE_KM - fromKm) * pricePerKm)}`;
 }
 
 async function saveDelivery() {
   getElement('dError').textContent = '';
   try {
-    const tariff = await callAdminApi('/delivery', { method: 'PUT', body: {
-      city: cityTiers,
-      region: { base: getElement('r_base').value, perKm: getElement('r_per').value, fromKm: getElement('r_from').value },
-      freeFrom: getElement('free_from').value,
-    } });
+    const tariff = await callAdminApi('/delivery', {
+      method: 'PUT',
+      body: {
+        city: cityTiers,
+        region: {
+          base: getElement('r_base').value,
+          perKm: getElement('r_per').value,
+          fromKm: getElement('r_from').value,
+        },
+        freeFrom: getElement('free_from').value,
+      },
+    });
     cityTiers = tariff.city;
     renderTiers();
     vibrateNotification('success');

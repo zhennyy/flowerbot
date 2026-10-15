@@ -80,7 +80,10 @@ const myOrders = await database.order.findMany({ where: { user_id: userId }, ord
 ### Проверка
 
 ```bash
-npm test
+npm test              # автотесты
+npm run lint          # ESLint: ошибки и понятные имена (без однобуквенных переменных)
+npm run format:check  # Prettier: единый стиль кода (npm run format — поправить)
+npm run test:ui       # мини-приложение в браузере (Playwright)
 ```
 
 65 автотестов: витрина (каталог, доставка, интервалы, «Мои заказы»), оформление заказа с проверкой даты и интервала по Москве,
@@ -89,6 +92,8 @@ npm test
 Тесты лежат рядом с кодом — файл `test.js` в папке модуля или маршрута; `npm test` находит их сам.
 
 `npm run test:ui` — проверка мини-приложения в браузере (нужен Chromium для Playwright), в `npm test` не входит.
+
+На каждый push и pull request GitHub Actions запускает Prettier, ESLint и тесты (`.github/workflows/ci.yml`).
 
 ## Запуск на своём компьютере
 

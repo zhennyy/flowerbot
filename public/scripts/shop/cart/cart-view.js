@@ -22,13 +22,19 @@ export function renderCartPage() {
   const items = cartItems();
   const isEmpty = !items.length;
   getElement('cartEmpty').hidden = !isEmpty;
-  ['cartLines', 'cartSummary', 'cartFooter'].forEach((id) => { getElement(id).hidden = isEmpty; });
-  getElement('cartLines').innerHTML = items.map((item) => `
+  ['cartLines', 'cartSummary', 'cartFooter'].forEach((id) => {
+    getElement(id).hidden = isEmpty;
+  });
+  getElement('cartLines').innerHTML = items
+    .map(
+      (item) => `
     <div class="line">
       <div class="pic" style="background:${escapeHtml(item.bg)}">${productPhotoHtml(item)}</div>
       <div class="mid"><div class="name">${escapeHtml(item.title)}</div><div class="sub">${formatRubles(item.price)} × ${item.qty}${isSoldByStem(item) ? ' шт' : ''} = ${formatRubles(item.price * item.qty)}</div></div>
       ${quantityStepperHtml(item.key, state.cart[item.key] || 0)}
-    </div>`).join('');
+    </div>`,
+    )
+    .join('');
   getElement('cartTotal').textContent = formatRubles(cartTotal());
   renderAddons(isEmpty);
 }
@@ -37,12 +43,18 @@ export function renderCartPage() {
 function renderAddons(isCartEmpty) {
   const addons = state.products.filter((product) => product.addon);
   getElement('addonsBox').classList.toggle('hidden', !addons.length || isCartEmpty);
-  getElement('addons').innerHTML = addons.map((addon) => `
+  getElement('addons').innerHTML = addons
+    .map(
+      (addon) => `
     <div class="addon ${state.cart[addon.id] ? 'on' : ''}">
       <div class="apic" style="background:${escapeHtml(addon.bg)}">${productPhotoHtml(addon)}</div>
       <div class="aname">${escapeHtml(addon.name)}</div>
-      <div class="arow"><b>${formatRubles(addon.price)}</b>${state.cart[addon.id]
-        ? quantityStepperHtml(addon.id, state.cart[addon.id], ' sm')
-        : `<button class="add sm" data-action="change-quantity" data-key="${addon.id}" data-delta="1" aria-label="Добавить">+</button>`}</div>
-    </div>`).join('');
+      <div class="arow"><b>${formatRubles(addon.price)}</b>${
+        state.cart[addon.id]
+          ? quantityStepperHtml(addon.id, state.cart[addon.id], ' sm')
+          : `<button class="add sm" data-action="change-quantity" data-key="${addon.id}" data-delta="1" aria-label="Добавить">+</button>`
+      }</div>
+    </div>`,
+    )
+    .join('');
 }

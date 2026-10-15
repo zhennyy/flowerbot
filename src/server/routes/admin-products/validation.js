@@ -17,17 +17,21 @@ function cleanProduct(form = {}) {
     badge: cleanText(form.badge, 20) || null,
     bg: /^#[0-9a-f]{6}$/i.test(form.bg) ? form.bg : DEFAULT_BG,
     in_stock: form.in_stock === false || form.in_stock === 0 ? 0 : 1,
-    unit: form.unit ? 'шт' : null,                                  // галочка «продаётся поштучно»
+    unit: form.unit ? 'шт' : null, // галочка «продаётся поштучно»
     min_qty: Math.min(MAX_MIN_QTY, Math.max(1, Math.floor(Number(form.min_qty)) || 1)),
     // Остаток: пусто — не считаем; число — списывается с каждым заказом
     stock: form.stock === '' || form.stock == null ? null : Math.max(0, Math.floor(Number(form.stock)) || 0),
-    addon: form.addon ? 1 : 0,                                      // показывать в корзине «Добавить к заказу»
+    addon: form.addon ? 1 : 0, // показывать в корзине «Добавить к заказу»
     emoji: cleanText(form.emoji, 8) || null,
     sizes: null,
   };
   // Размеры S/M/L: [{name, price, note}]
   const sizes = (Array.isArray(form.sizes) ? form.sizes : [])
-    .map((size) => ({ name: cleanText(size?.name, 12), price: Math.round(Number(size?.price)), note: cleanText(size?.note, 40) }))
+    .map((size) => ({
+      name: cleanText(size?.name, 12),
+      price: Math.round(Number(size?.price)),
+      note: cleanText(size?.note, 40),
+    }))
     .filter((size) => size.name && size.price > 0)
     .slice(0, MAX_SIZES);
   if (sizes.length) {
@@ -36,7 +40,8 @@ function cleanProduct(form = {}) {
   }
   if (!product.category || !product.name) throw new ValidationError('Заполните название и категорию');
   if (!(product.price > 0)) throw new ValidationError('Цена должна быть больше нуля');
-  if (product.photo_url && !/^(https:\/\/|\/uploads\/|\/photos\/)/.test(product.photo_url)) throw new ValidationError('Ссылка на фото должна начинаться с https://');
+  if (product.photo_url && !/^(https:\/\/|\/uploads\/|\/photos\/)/.test(product.photo_url))
+    throw new ValidationError('Ссылка на фото должна начинаться с https://');
   return product;
 }
 

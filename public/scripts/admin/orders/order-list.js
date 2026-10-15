@@ -35,15 +35,23 @@ function matchesQuery(order) {
   const query = normalizeText(orderState.query);
   const digits = orderState.query.replace(/\D/g, '');
   if (!query) return true;
-  const searchableText = normalizeText(`${order.id} ${order.customer_name} ${order.username || ''} ${order.address} ${order.recipient || ''}`);
-  return searchableText.includes(query) || (digits.length >= MIN_PHONE_DIGITS && order.phone.replace(/\D/g, '').includes(digits)) || String(order.id) === digits;
+  const searchableText = normalizeText(
+    `${order.id} ${order.customer_name} ${order.username || ''} ${order.address} ${order.recipient || ''}`,
+  );
+  return (
+    searchableText.includes(query) ||
+    (digits.length >= MIN_PHONE_DIGITS && order.phone.replace(/\D/g, '').includes(digits)) ||
+    String(order.id) === digits
+  );
 }
 
 function renderFilters() {
-  getElement('orderFilters').innerHTML = Object.entries(FILTER_LABELS).map(([filter, label]) => {
-    const count = filter === 'all' ? 0 : orderState.orders.filter(FILTERS[filter]).length; // у «Все» счётчика нет
-    return `<button class="f ${filter === orderState.filter ? 'active' : ''}" data-action="filter-orders" data-filter="${filter}">${label}${count ? `<span class="fn">${count}</span>` : ''}</button>`;
-  }).join('');
+  getElement('orderFilters').innerHTML = Object.entries(FILTER_LABELS)
+    .map(([filter, label]) => {
+      const count = filter === 'all' ? 0 : orderState.orders.filter(FILTERS[filter]).length; // у «Все» счётчика нет
+      return `<button class="f ${filter === orderState.filter ? 'active' : ''}" data-action="filter-orders" data-filter="${filter}">${label}${count ? `<span class="fn">${count}</span>` : ''}</button>`;
+    })
+    .join('');
 }
 
 export function renderOrders() {
@@ -55,7 +63,9 @@ export function renderOrders() {
   }
   const ordersBox = getElement('orders');
   ordersBox.innerHTML = visibleOrders.length
-    ? visibleOrders.map((order) => orderCardHtml(order, orderState.statuses, orderState.openMenuOrderId === order.id)).join('')
+    ? visibleOrders
+        .map((order) => orderCardHtml(order, orderState.statuses, orderState.openMenuOrderId === order.id))
+        .join('')
     : '<div class="empty">Здесь пока пусто 🌿</div>';
   loadTelegramPhotosIn(ordersBox);
 }

@@ -7,7 +7,9 @@ const BUYER_ID = 7392580260; // настоящие id Telegram бывают дл
 const OTHER_BUYER_ID = 7102;
 let shop;
 
-before(async () => { shop = await testHelpers.start(); });
+before(async () => {
+  shop = await testHelpers.start();
+});
 
 test('каталог: только то, что в наличии, размеры — массивом, фото из папки проекта', async () => {
   await shop.database.product.update({ where: { id: 2 }, data: { in_stock: 0 } });
@@ -18,9 +20,20 @@ test('каталог: только то, что в наличии, размер�
   assert.ok(!productIds.includes(2) && !productIds.includes(4), 'скрытый и закончившийся не показываем');
   assert.equal(response.body.length, 17);
   const provence = response.body.find((product) => product.name === 'Утро в Провансе');
-  assert.deepEqual(provence.sizes.map((size) => [size.name, size.price]), [['S', 2490], ['M', 3490], ['L', 4990]]);
+  assert.deepEqual(
+    provence.sizes.map((size) => [size.name, size.price]),
+    [
+      ['S', 2490],
+      ['M', 3490],
+      ['L', 4990],
+    ],
+  );
   assert.equal(provence.photo_url, '/photos/1-utro-v-provanse.jpg');
-  assert.deepEqual(response.body.slice(-5).map((product) => product.addon), [1, 1, 1, 1, 1], 'допы в конце (sort 200+)');
+  assert.deepEqual(
+    response.body.slice(-5).map((product) => product.addon),
+    [1, 1, 1, 1, 1],
+    'допы в конце (sort 200+)',
+  );
   await shop.database.product.updateMany({ where: { id: { in: [2, 4] } }, data: { in_stock: 1, stock: null } });
 });
 
@@ -44,7 +57,14 @@ test('расчёт доставки: город по зонам, Ленобла�
   assert.equal(gatchina.body.zone, 'Ленобласть');
   assert.equal(gatchina.body.fee, 990 + Math.ceil(gatchina.body.km - 20) * 40);
 
-  await shop.call(testHelpers.OWNER_ID, 'PUT', '/api/admin/delivery', { city: [{ km: 3, price: 290 }, { km: 999, price: 890 }], region: { base: 990, perKm: 40, fromKm: 20 }, freeFrom: 5000 });
+  await shop.call(testHelpers.OWNER_ID, 'PUT', '/api/admin/delivery', {
+    city: [
+      { km: 3, price: 290 },
+      { km: 999, price: 890 },
+    ],
+    region: { base: 990, perKm: 40, fromKm: 20 },
+    freeFrom: 5000,
+  });
   const free = await quote({ address: 'Невский проспект, 1', items: [{ id: 2, qty: 1 }] }); // 7 990 ₽ ≥ 5 000 ₽
   assert.equal(free.body.fee, 0);
   assert.equal(free.body.fullFee, 290);
@@ -61,7 +81,11 @@ test('геокодер не отвечает — доставку уточним
   const response = await shop.call(BUYER_ID, 'POST', '/api/delivery-quote', { address: 'Комендантский проспект, 5' });
   testHelpers.geocoder.down = false;
   assert.equal(response.status, 200);
-  assert.deepEqual(response.body, { ok: true, fee: null, error: 'Не получилось рассчитать доставку — уточним после заказа' });
+  assert.deepEqual(response.body, {
+    ok: true,
+    fee: null,
+    error: 'Не получилось рассчитать доставку — уточним после заказа',
+  });
 });
 
 test('интервалы: выходной день закрыт, лимит заказов на интервал', async () => {
@@ -72,8 +96,14 @@ test('интервалы: выходной день закрыт, лимит з�
   assert.ok(closedDay.body.slots.every((slot) => !slot.available));
   assert.equal((await shop.placeOrder(BUYER_ID, [[3, 1, 'S']], { delivery_time: '18:00–21:00' })).status, 200);
   const day = await shop.call(null, 'GET', `/api/slots?date=${date}`);
-  assert.deepEqual(day.body.slots.find((slot) => slot.time === '18:00–21:00'), { time: '18:00–21:00', available: false, left: 0 });
-  assert.deepEqual(day.body.slots.find((slot) => slot.time === '09:00–12:00'), { time: '09:00–12:00', available: true, left: 1 });
+  assert.deepEqual(
+    day.body.slots.find((slot) => slot.time === '18:00–21:00'),
+    { time: '18:00–21:00', available: false, left: 0 },
+  );
+  assert.deepEqual(
+    day.body.slots.find((slot) => slot.time === '09:00–12:00'),
+    { time: '09:00–12:00', available: true, left: 1 },
+  );
   assert.deepEqual((await shop.call(null, 'GET', '/api/slots?date=завтра')).body, { error: 'Неверная дата' });
   await shop.call(testHelpers.OWNER_ID, 'PUT', '/api/admin/calendar', { closed: [], slotLimit: 0 });
 });
@@ -82,8 +112,22 @@ test('«Мои заказы»: только свои, ссылка на опла
   const myOrders = await shop.call(BUYER_ID, 'GET', '/api/my-orders');
   assert.equal(myOrders.status, 200);
   const [order] = myOrders.body;
-  assert.deepEqual(Object.keys(order), ['id', 'status', 'status_label', 'items', 'total', 'delivery_fee', 'when', 'address', 'card_text', 'recipient',
-    'rating', 'payment_status', 'pay_url', 'photo_status']);
+  assert.deepEqual(Object.keys(order), [
+    'id',
+    'status',
+    'status_label',
+    'items',
+    'total',
+    'delivery_fee',
+    'when',
+    'address',
+    'card_text',
+    'recipient',
+    'rating',
+    'payment_status',
+    'pay_url',
+    'photo_status',
+  ]);
   assert.equal(order.status_label, 'Новый');
   assert.equal(order.payment_status, 'pending');
   assert.match(order.pay_url, /^https:\/\/pay\.test\//);
@@ -91,6 +135,12 @@ test('«Мои заказы»: только свои, ссылка на опла
   assert.deepEqual((await shop.call(OTHER_BUYER_ID, 'GET', '/api/my-orders')).body, []);
 
   const repeat = await shop.call(BUYER_ID, 'GET', `/api/my-orders/${order.id}`);
-  assert.deepEqual(repeat.body, { id: order.id, items: [{ id: 3, qty: 1, size: 'S' }], address: 'Невский проспект, 1', zone: 'city', recipient: null });
+  assert.deepEqual(repeat.body, {
+    id: order.id,
+    items: [{ id: 3, qty: 1, size: 'S' }],
+    address: 'Невский проспект, 1',
+    zone: 'city',
+    recipient: null,
+  });
   assert.equal((await shop.call(OTHER_BUYER_ID, 'GET', `/api/my-orders/${order.id}`)).status, 404);
 });

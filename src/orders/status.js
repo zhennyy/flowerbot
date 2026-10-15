@@ -30,15 +30,20 @@ async function changeStatus(bot, orderId, status) {
   // Прошлое сообщение о статусе убираем — в чате остаётся только актуальное
   if (order.status_msg_id) await bot.telegram.deleteMessage(order.user_id, order.status_msg_id).catch(() => {});
   let keyboard = {};
-  if (status === 'done') keyboard = Markup.inlineKeyboard([Markup.button.webApp('🔁 Повторить заказ', shopUrl({ repeat: orderId }))]);
-  if (status === 'cancelled') keyboard = Markup.inlineKeyboard([Markup.button.callback('💬 Написать флористу', `ask:${orderId}`)]);
+  if (status === 'done')
+    keyboard = Markup.inlineKeyboard([Markup.button.webApp('🔁 Повторить заказ', shopUrl({ repeat: orderId }))]);
+  if (status === 'cancelled')
+    keyboard = Markup.inlineKeyboard([Markup.button.callback('💬 Написать флористу', `ask:${orderId}`)]);
   // С фото букета — живее. Если Telegram не смог загрузить картинку, отправим просто текст
   const photo = status === 'cancelled' ? null : await orderPhoto(updatedOrder);
   let sentMessage = photo
-    ? await bot.telegram.sendPhoto(order.user_id, photo, { caption: statusNote(updatedOrder), parse_mode: 'HTML', ...keyboard }).catch(() => null)
+    ? await bot.telegram
+        .sendPhoto(order.user_id, photo, { caption: statusNote(updatedOrder), parse_mode: 'HTML', ...keyboard })
+        .catch(() => null)
     : null;
   if (!sentMessage) {
-    sentMessage = await bot.telegram.sendMessage(order.user_id, statusNote(updatedOrder), { parse_mode: 'HTML', ...keyboard })
+    sentMessage = await bot.telegram
+      .sendMessage(order.user_id, statusNote(updatedOrder), { parse_mode: 'HTML', ...keyboard })
       .catch((sendError) => console.error('Не смогла написать покупателю:', sendError.message));
   }
   if (sentMessage?.message_id) await setStatusMessage(orderId, sentMessage.message_id);

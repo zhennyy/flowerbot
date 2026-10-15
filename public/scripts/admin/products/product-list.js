@@ -16,7 +16,8 @@ export async function loadProducts() {
     productState.products = await callAdminApi('/products');
     renderProducts();
   } catch (error) {
-    if (getElement('products')) getElement('products').innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`;
+    if (getElement('products'))
+      getElement('products').innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`;
   }
 }
 
@@ -35,8 +36,13 @@ function stockHtml(product) {
 
 export function renderProducts() {
   // подсказки категорий в редакторе
-  getElement('catList').innerHTML = [...new Set(productState.products.map((product) => product.category))].map((category) => `<option value="${escapeHtml(category)}">`).join('');
-  getElement('products').innerHTML = productState.products.map((product) => `
+  getElement('catList').innerHTML = [...new Set(productState.products.map((product) => product.category))]
+    .map((category) => `<option value="${escapeHtml(category)}">`)
+    .join('');
+  getElement('products').innerHTML =
+    productState.products
+      .map(
+        (product) => `
     <div class="card prod ${product.in_stock ? '' : 'off'}">
       <div class="thumb" style="background:${escapeHtml(product.bg)}">${product.photo_url ? `<img src="${escapeHtml(product.photo_url)}" alt="">` : escapeHtml(product.emoji || '💐')}</div>
       <div class="mid"><div class="name">${escapeHtml(product.name)}</div>
@@ -44,7 +50,9 @@ export function renderProducts() {
         ${stockHtml(product)}</div>
       <button class="icon" data-action="toggle-product-visibility" data-product-id="${product.id}" title="Показать/скрыть">${product.in_stock ? '👁' : '🚫'}</button>
       <button class="icon" data-action="edit-product" data-product-id="${product.id}" title="Изменить">✏️</button>
-    </div>`).join('') || '<div class="empty">Букетов пока нет</div>';
+    </div>`,
+      )
+      .join('') || '<div class="empty">Букетов пока нет</div>';
 }
 
 async function toggleProductVisibility(productId) {

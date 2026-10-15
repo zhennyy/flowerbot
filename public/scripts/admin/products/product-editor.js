@@ -8,8 +8,20 @@ import { sizeState, renderSizeRows, suggestSizesFromPrice } from './size-rows.js
 
 const DEFAULT_BACKGROUND = '#f6e3ea';
 const EMPTY_PRODUCT = {
-  name: '', description: '', price: '', category: '', photo_url: '', badge: '', bg: DEFAULT_BACKGROUND,
-  in_stock: 1, unit: null, min_qty: 1, stock: null, addon: 0, emoji: '', sizes: null,
+  name: '',
+  description: '',
+  price: '',
+  category: '',
+  photo_url: '',
+  badge: '',
+  bg: DEFAULT_BACKGROUND,
+  in_stock: 1,
+  unit: null,
+  min_qty: 1,
+  stock: null,
+  addon: 0,
+  emoji: '',
+  sizes: null,
 };
 // Фото по ссылке: внешние https://, загруженные (/uploads/) и из папки проекта (/photos/) — как разрешает сервер
 const PHOTO_URL_PATTERN = /^(https:\/\/|\/uploads\/|\/photos\/)/;
@@ -75,7 +87,10 @@ async function uploadPhoto(event) {
   field('pError').textContent = '';
   try {
     const image = await readImageFile(file);
-    const uploaded = await callAdminApi('/upload', { method: 'POST', body: { full: resizeToJpeg(image, PHOTO_SIDE, 0.85), thumb: resizeToJpeg(image, THUMBNAIL_SIDE, 0.8) } });
+    const uploaded = await callAdminApi('/upload', {
+      method: 'POST',
+      body: { full: resizeToJpeg(image, PHOTO_SIDE, 0.85), thumb: resizeToJpeg(image, THUMBNAIL_SIDE, 0.8) },
+    });
     field('p_photo').value = uploaded.url;
     showPhotoPreview();
     vibrateNotification('success');
@@ -89,13 +104,23 @@ async function uploadPhoto(event) {
 function readForm() {
   const hasSizes = field('p_sizes_on').checked;
   return {
-    name: field('p_name').value, description: field('p_desc').value, price: field('p_price').value,
-    category: field('p_cat').value, photo_url: field('p_photo').value, badge: field('p_badge').value,
-    bg: field('p_bg').value, in_stock: field('p_stock').checked,
-    unit: field('p_unit').checked, min_qty: field('p_min').value,
-    stock: field('p_qty').value, emoji: field('p_emoji').value, addon: field('p_addon').checked,
+    name: field('p_name').value,
+    description: field('p_desc').value,
+    price: field('p_price').value,
+    category: field('p_cat').value,
+    photo_url: field('p_photo').value,
+    badge: field('p_badge').value,
+    bg: field('p_bg').value,
+    in_stock: field('p_stock').checked,
+    unit: field('p_unit').checked,
+    min_qty: field('p_min').value,
+    stock: field('p_qty').value,
+    emoji: field('p_emoji').value,
+    addon: field('p_addon').checked,
     sizes: hasSizes ? sizeState.sizes : [],
-    ...(hasSizes && sizeState.sizes.length ? { price: Math.min(...sizeState.sizes.map((size) => size.price || Infinity)) } : {}),
+    ...(hasSizes && sizeState.sizes.length
+      ? { price: Math.min(...sizeState.sizes.map((size) => size.price || Infinity)) }
+      : {}),
   };
 }
 
@@ -131,7 +156,9 @@ export function listenToEditorInputs() {
   field('pForm').addEventListener('submit', saveProduct);
   field('p_file').addEventListener('change', uploadPhoto);
   ['p_photo', 'p_bg', 'p_emoji'].forEach((id) => field(id).addEventListener('input', showPhotoPreview));
-  field('p_unit').addEventListener('change', (event) => { field('minBox').hidden = !event.target.checked; });
+  field('p_unit').addEventListener('change', (event) => {
+    field('minBox').hidden = !event.target.checked;
+  });
   field('p_sizes_on').addEventListener('change', (event) => {
     const hasSizes = event.target.checked;
     field('sizesBox').hidden = !hasSizes;

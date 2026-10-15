@@ -29,16 +29,19 @@ const compareDir = readArgument('--compare');
 function serveTelegramPhotos() {
   const samplePhoto = fs.readFileSync(SAMPLE_PHOTO_PATH);
   const previousFetch = global.fetch;
-  global.fetch = (url, options) => (String(url).startsWith('https://api.telegram.org/file/')
-    ? Promise.resolve(new Response(samplePhoto, { status: 200, headers: { 'content-type': 'image/jpeg' } }))
-    : previousFetch(url, options));
+  global.fetch = (url, options) =>
+    String(url).startsWith('https://api.telegram.org/file/')
+      ? Promise.resolve(new Response(samplePhoto, { status: 200, headers: { 'content-type': 'image/jpeg' } }))
+      : previousFetch(url, options);
 }
 
 function printReport(report) {
   console.log(`Экранов: ${report.screens.length} → ${outputDir}`);
   console.log(`Проверки: ${report.checks.filter((item) => item.passed).length}/${report.checks.length} пройдено`);
   console.log(`Ошибки консоли: ${report.consoleErrors.length}`, report.consoleErrors);
-  console.log(`Ожидаемые ошибки сети (403 в админке у покупателя, 400 у адреса вне зоны доставки): ${report.expectedNetworkErrors.length}`);
+  console.log(
+    `Ожидаемые ошибки сети (403 в админке у покупателя, 400 у адреса вне зоны доставки): ${report.expectedNetworkErrors.length}`,
+  );
 }
 
 async function main() {
@@ -64,8 +67,12 @@ async function main() {
     const results = await compareScreens(browser, outputDir, compareDir);
     const mismatches = results.filter((item) => item.status !== 'совпадает');
     const noisy = results.filter((item) => item.noisePixels);
-    console.log(`Сравнение с ${compareDir}: совпало ${results.length - mismatches.length} из ${results.length}`
-      + (noisy.length ? ` (из них ${noisy.length} с шумом сглаживания: ${noisy.map((item) => `${item.file} ${item.noisePixels} пикс.`).join(', ')})` : ''));
+    console.log(
+      `Сравнение с ${compareDir}: совпало ${results.length - mismatches.length} из ${results.length}` +
+        (noisy.length
+          ? ` (из них ${noisy.length} с шумом сглаживания: ${noisy.map((item) => `${item.file} ${item.noisePixels} пикс.`).join(', ')})`
+          : ''),
+    );
     mismatches.forEach((item) => console.log('  ✗', item.file, item.status));
     failed = failed || mismatches.length > 0;
   }
@@ -73,4 +80,7 @@ async function main() {
   process.exit(failed ? 1 : 0);
 }
 
-main().catch((error) => { console.error(error); process.exit(1); });
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

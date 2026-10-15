@@ -9,7 +9,20 @@ const formatRubles = (amount) => amount.toLocaleString('ru-RU') + ' ₽';
 const formatDate = (isoDate) => isoDate.split('-').reverse().join('.');
 
 // «Сегодня, 18–21» вместо «01.10.2026, 18:00–21:00»
-const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+const MONTHS = [
+  'января',
+  'февраля',
+  'марта',
+  'апреля',
+  'мая',
+  'июня',
+  'июля',
+  'августа',
+  'сентября',
+  'октября',
+  'ноября',
+  'декабря',
+];
 const niceDay = (isoDate) => {
   if (isoDate === moscowDate(0)) return 'Сегодня';
   if (isoDate === moscowDate(1)) return 'Завтра';
@@ -34,21 +47,33 @@ function orderText(order, forOwner = false, withHeader = true) {
     const quantityText = orderItem.qty > 1 || orderItem.unit ? ` × ${orderItem.qty}${orderItem.unit ? ' шт' : ''}` : '';
     lines.push(`${escapeHtml(orderItem.name)}${quantityText} — ${formatRubles(orderItem.price * orderItem.qty)}`);
   }
-  lines.push(order.delivery_fee == null ? 'Доставка — уточним' : `Доставка — ${order.delivery_fee ? formatRubles(order.delivery_fee) : 'бесплатно'}`);
+  lines.push(
+    order.delivery_fee == null
+      ? 'Доставка — уточним'
+      : `Доставка — ${order.delivery_fee ? formatRubles(order.delivery_fee) : 'бесплатно'}`,
+  );
   lines.push(`<b>Итого ${formatRubles(order.total)}</b>`);
   const extraLines = [];
   if (order.recipient) extraLines.push(`🎁 ${escapeHtml(order.recipient)}`);
   if (order.card_text) extraLines.push(`💌 «${escapeHtml(order.card_text)}»`);
   if (order.comment) extraLines.push(`💬 ${escapeHtml(order.comment)}`);
-  if (forOwner) extraLines.push(`👤 ${escapeHtml(order.customer_name)}${order.username ? ' @' + escapeHtml(order.username) : ''} · ${escapeHtml(order.phone)}`);
+  if (forOwner)
+    extraLines.push(
+      `👤 ${escapeHtml(order.customer_name)}${order.username ? ' @' + escapeHtml(order.username) : ''} · ${escapeHtml(order.phone)}`,
+    );
   if (extraLines.length) lines.push('', ...extraLines);
   return lines.join('\n');
 }
 
 // Трекер этапов: ✔ пройдено, ▸ сейчас, ○ впереди
 // [статус, как звучит сейчас, как звучит когда пройден]
-const STEPS = [['new', 'Принят', 'Принят'], ['confirmed', 'Подтверждён', 'Подтверждён'], ['assembling', 'Собираем букет', 'Букет собран'],
-  ['delivering', 'В пути', 'Доставка'], ['done', 'Доставлен', 'Доставлен']];
+const STEPS = [
+  ['new', 'Принят', 'Принят'],
+  ['confirmed', 'Подтверждён', 'Подтверждён'],
+  ['assembling', 'Собираем букет', 'Букет собран'],
+  ['delivering', 'В пути', 'Доставка'],
+  ['done', 'Доставлен', 'Доставлен'],
+];
 function tracker(status) {
   const currentStep = STEPS.findIndex(([stepStatus]) => stepStatus === status);
   return STEPS.map(([, nowText, pastText], stepIndex) => {
@@ -64,7 +89,10 @@ function statusNote(order) {
   const [title, phrase] = {
     new: ['🕊 Заказ снова в обработке', 'Скоро всё подтвердим'],
     confirmed: ['✅ Заказ подтверждён!', `Ждите букет ${when} 🌷`],
-    assembling: ['💐 Флорист собирает ваш букет', 'Подбираем самые свежие цветы — с любовью и вниманием к каждой веточке'],
+    assembling: [
+      '💐 Флорист собирает ваш букет',
+      'Подбираем самые свежие цветы — с любовью и вниманием к каждой веточке',
+    ],
     delivering: ['🚚 Курьер уже в пути!', 'Совсем скоро букет будет у вас. Держите телефон рядом 📱'],
     done: ['🌷 Букет доставлен!', 'Надеемся, он подарил много радости. Спасибо, что выбрали «Флёр» ❤️'],
     cancelled: ['Заказ отменён', 'Если это ошибка или хотите что-то изменить — просто напишите нам сюда'],
@@ -76,4 +104,16 @@ function statusNote(order) {
   return lines.join('\n');
 }
 
-module.exports = { escapeHtml, formatRubles, formatDate, niceDay, slotText, niceWhen, shortWhen, statusLabel, orderText, tracker, statusNote };
+module.exports = {
+  escapeHtml,
+  formatRubles,
+  formatDate,
+  niceDay,
+  slotText,
+  niceWhen,
+  shortWhen,
+  statusLabel,
+  orderText,
+  tracker,
+  statusNote,
+};

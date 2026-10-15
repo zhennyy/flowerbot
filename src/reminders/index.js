@@ -19,9 +19,11 @@ function plusOneYear(isoDate) {
 }
 
 const findReminderByOrder = (orderId) => database.reminder.findFirst({ where: { order_id: orderId } });
-const getUserReminders = (userId) => database.reminder.findMany({ where: { user_id: Number(userId) }, orderBy: [{ event_date: 'asc' }, { id: 'asc' }] });
+const getUserReminders = (userId) =>
+  database.reminder.findMany({ where: { user_id: Number(userId) }, orderBy: [{ event_date: 'asc' }, { id: 'asc' }] });
 // Удалить можно только своё напоминание
-const deleteReminder = (reminderId, userId) => database.reminder.deleteMany({ where: { id: reminderId, user_id: Number(userId) } });
+const deleteReminder = (reminderId, userId) =>
+  database.reminder.deleteMany({ where: { id: reminderId, user_id: Number(userId) } });
 
 // Повод — дата доставки заказа; ровно через год, напомнить за 3 дня
 async function addReminderForOrder(order, occasion) {
@@ -29,12 +31,19 @@ async function addReminderForOrder(order, occasion) {
   eventDate.setUTCFullYear(eventDate.getUTCFullYear() + 1);
   const remindDate = new Date(eventDate - DAYS_BEFORE_EVENT * DAY_MS);
   return database.reminder.create({
-    data: { user_id: order.user_id, order_id: order.id, occasion, event_date: toIsoDate(eventDate), remind_at: toIsoDate(remindDate) },
+    data: {
+      user_id: order.user_id,
+      order_id: order.id,
+      occasion,
+      event_date: toIsoDate(eventDate),
+      remind_at: toIsoDate(remindDate),
+    },
   });
 }
 
 // Пора напомнить: дата наступила (по Москве)
-const getDueReminders = () => database.reminder.findMany({ where: { remind_at: { lte: moscowDate(0) } }, orderBy: { id: 'asc' } });
+const getDueReminders = () =>
+  database.reminder.findMany({ where: { remind_at: { lte: moscowDate(0) } }, orderBy: { id: 'asc' } });
 
 // Повод ежегодный — после напоминания переносим на следующий год
 async function moveReminderToNextYear(reminder) {
@@ -56,16 +65,31 @@ async function sendDueReminders(bot) {
     await moveReminderToNextYear(reminder); // повод ежегодный — следующий раз через год
     if (!order) continue;
     const giftNames = order.items.map((orderItem) => orderItem.name).join(', ');
-    await bot.telegram.sendMessage(reminder.user_id,
-      `🔔 Через 3 дня — ${reminder.occasion.toLowerCase()} (${formatDate(reminder.event_date)})${order.recipient ? `, ${escapeHtml(order.recipient)}` : ''}!\n`
-      + `В прошлый раз вы дарили: ${escapeHtml(giftNames)}.\nПовторим или выберем что-то новое? 💐`,
-      { parse_mode: 'HTML', ...Markup.inlineKeyboard([
-        [Markup.button.webApp('🔁 Повторить тот же букет', shopUrl({ repeat: order.id }))],
-        [Markup.button.webApp('💐 Выбрать другой', shopUrl())],
-      ]) }).catch((sendError) => console.error('Напоминание:', sendError.message));
+    await bot.telegram
+      .sendMessage(
+        reminder.user_id,
+        `🔔 Через 3 дня — ${reminder.occasion.toLowerCase()} (${formatDate(reminder.event_date)})${order.recipient ? `, ${escapeHtml(order.recipient)}` : ''}!\n` +
+          `В прошлый раз вы дарили: ${escapeHtml(giftNames)}.\nПовторим или выберем что-то новое? 💐`,
+        {
+          parse_mode: 'HTML',
+          ...Markup.inlineKeyboard([
+            [Markup.button.webApp('🔁 Повторить тот же букет', shopUrl({ repeat: order.id }))],
+            [Markup.button.webApp('💐 Выбрать другой', shopUrl())],
+          ]),
+        },
+      )
+      .catch((sendError) => console.error('Напоминание:', sendError.message));
   }
 }
 
 module.exports = {
-  OCCASIONS, sendDueReminders, findReminderByOrder, getUserReminders, deleteReminder, addReminderForOrder, getDueReminders, moveReminderToNextYear, plusOneYear,
+  OCCASIONS,
+  sendDueReminders,
+  findReminderByOrder,
+  getUserReminders,
+  deleteReminder,
+  addReminderForOrder,
+  getDueReminders,
+  moveReminderToNextYear,
+  plusOneYear,
 };
