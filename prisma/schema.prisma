@@ -66,6 +66,7 @@ model Order {
   payment_status String? // NULL без онлайн-оплаты · pending · paid · canceled · expired
   paid_at        String?
   pay_url        String? // ссылка на оплату — вернуться к оплате из «Мои заказы»
+  consent_at     String? // когда покупатель дал согласие на обработку персональных данных (NULL — заказ до 152-ФЗ)
 
   @@map("orders")
 }

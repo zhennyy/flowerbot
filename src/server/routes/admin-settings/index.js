@@ -62,6 +62,7 @@ function createAdminSettingsRouter({ bot, ownerAuth }) {
   );
 
   // Резервная копия: бот присылает владелице ZIP в чат — каталог, заказы, отзывы, переписка, настройки, фото
+  // (без персональных данных покупателей — см. src/backup)
   router.post(
     '/backup',
     ownerAuth,
@@ -72,7 +73,7 @@ function createAdminSettingsRouter({ bot, ownerAuth }) {
           getOwnerId(),
           { source: backup.buffer, filename: backup.filename },
           {
-            caption: `📦 Резервная копия «Флёра»\nФото: ${backup.photos} · заказы и каталог — в Excel-файлах внутри.\nХраните у себя: там телефоны и адреса покупателей.`,
+            caption: `📦 Резервная копия «Флёра»\nФото: ${backup.photos} · заказы и каталог — в Excel-файлах внутри.\nКонтактов и адресов покупателей в копии нет — они хранятся только на сервере.`,
           },
         );
       } catch (sendError) {

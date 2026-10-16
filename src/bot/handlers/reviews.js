@@ -20,9 +20,13 @@ function registerReviewHandlers(bot) {
     const ownerId = getOwnerId();
     if (ownerId) {
       bot.telegram
-        .sendMessage(ownerId, `${stars(rating)} Оценка к заказу №${order.id} от ${escapeHtml(order.customer_name)}`, {
-          parse_mode: 'HTML',
-        })
+        .sendMessage(
+          ownerId,
+          `${stars(rating)} Оценка к заказу №${order.id} от ${escapeHtml(context.from.first_name || 'покупателя')}`,
+          {
+            parse_mode: 'HTML',
+          },
+        )
         .catch(() => {});
     }
     if (rating <= LOW_RATING) {

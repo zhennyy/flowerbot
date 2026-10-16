@@ -11,6 +11,7 @@ import { navigationActions, listenForBackNavigation } from './navigation.js';
 import { deliveryQuoteActions, listenToAddressInput, loadDeliveryInfo } from './checkout/delivery-quote.js';
 import { checkoutFormActions, listenToCheckoutInputs } from './checkout/checkout-form.js';
 import { submitOrderActions, listenToOrderForm } from './checkout/submit-order.js';
+import { consentActions, listenToConsentCheckbox } from './checkout/consent.js';
 import { myOrdersActions, loadMyOrders } from './orders/my-orders.js';
 import { repeatOrderActions, repeatOrder } from './orders/repeat-order.js';
 
@@ -25,6 +26,7 @@ initTelegram();
   deliveryQuoteActions,
   checkoutFormActions,
   submitOrderActions,
+  consentActions,
   myOrdersActions,
   repeatOrderActions,
 ].forEach(registerClickActions);
@@ -36,6 +38,7 @@ listenForBackNavigation();
 listenToAddressInput();
 listenToCheckoutInputs();
 listenToOrderForm();
+listenToConsentCheckbox();
 
 loadCatalog().then(() => repeatOrder()); // ссылка «Повторить заказ» из чата — когда каталог уже загружен
 loadDeliveryInfo();

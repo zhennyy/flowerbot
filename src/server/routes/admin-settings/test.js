@@ -55,7 +55,15 @@ test('тарифы доставки: зоны сортируются, мусор
   assert.deepEqual(rejected.body, { error: 'Добавьте хотя бы одну зону по городу' });
 });
 
-test('резервная копия: ZIP владелице в чат, без служебных отметок о фото', async () => {
+test('резервная копия: ZIP владелице в чат, без служебных отметок о фото и без персональных данных покупателей', async () => {
+  const orderResponse = await shop.placeOrder(7450, [[2, 1]], {
+    customer_name: 'Ирина Петрова',
+    phone: '+7 911 222-33-44',
+    address: 'Невский проспект, 28',
+    recipient: 'Ольга',
+    comment: 'Домофон 25',
+  });
+  assert.equal(orderResponse.status, 200, JSON.stringify(orderResponse.body));
   const response = await shop.call(OWNER_ID, 'POST', '/api/admin/backup', {});
   assert.equal(response.status, 200, JSON.stringify(response.body));
   assert.equal(response.body.ok, true);
@@ -78,5 +86,10 @@ test('резервная копия: ZIP владелице в чат, без с
     assert.ok(archiveText.includes(fileName), fileName);
   }
   assert.ok(!archiveText.includes('photo_applied:'), 'служебные отметки не в архиве');
+  const archiveUtf8 = backup.buffer.toString('utf8');
+  assert.ok(archiveUtf8.includes(`"id": ${orderResponse.body.id}`), 'заказ в архиве есть');
+  for (const personalData of ['222-33-44', 'Невский', 'Ирина', 'Ольга', 'Домофон', '"phone"', '"address"'])
+    assert.ok(!archiveUtf8.includes(personalData), `в архиве для Telegram нет «${personalData}»`);
+  assert.doesNotMatch(documentCall.payload.caption, /там телефоны/);
   assert.equal(response.body.size, backup.buffer.length);
 });

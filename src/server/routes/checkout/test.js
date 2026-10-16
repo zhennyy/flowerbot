@@ -71,6 +71,57 @@ test('ошибки формы: пустая корзина, имя, телефо
   assert.equal(await shop.database.order.count(), ordersBefore);
 });
 
+test('без галочки согласия на обработку данных — 400 и заказ не создаётся', async () => {
+  const ordersBefore = await shop.database.order.count();
+  for (const consent of [undefined, false, 'true', 1]) {
+    const response = await shop.placeOrder(nextBuyer(), [[2, 1]], { consent });
+    assert.equal(response.status, 400, `consent: ${JSON.stringify(consent)}`);
+    assert.deepEqual(response.body, { error: 'Нужно согласие на обработку персональных данных' });
+  }
+  assert.equal(await shop.database.order.count(), ordersBefore);
+});
+
+test('с согласием — в заказе время согласия (consent_at) в формате остальных дат', async () => {
+  const response = await shop.placeOrder(nextBuyer(), [[2, 1]]);
+  assert.equal(response.status, 200, JSON.stringify(response.body));
+  const order = await shop.findOrder(response.body.id);
+  assert.match(order.consent_at, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+  assert.ok(Math.abs(Date.parse(order.consent_at.replace(' ', 'T') + 'Z') - Date.now()) < 60000, order.consent_at);
+});
+
+test('владелице о новом заказе — без телефона, адреса, имени, получателя и комментария; контакты — в админке', async () => {
+  const buyerId = nextBuyer();
+  const response = await shop.placeOrder(buyerId, [[2, 1]], {
+    customer_name: 'Ирина Петрова',
+    phone: '+7 911 222-33-44',
+    address: 'Невский проспект, 28, кв. 5',
+    recipient: 'Ольга, +7 921 000-11-22',
+    comment: 'Домофон 25, позвонить за час',
+    card_text: 'С днём рождения!',
+  });
+  assert.equal(response.status, 200, JSON.stringify(response.body));
+  const payment = testHelpers.lastPayment();
+  payment.status = 'succeeded';
+  await shop.sendPaymentWebhook(payment.id);
+  await testHelpers.settle();
+  const ownerCall = testHelpers
+    .sentTo(testHelpers.OWNER_ID)
+    .findLast((call) => /Новый заказ!/.test(testHelpers.textOf(call)));
+  const ownerText = testHelpers.textOf(ownerCall);
+  assert.match(ownerText, new RegExp(`Заказ №${response.body.id}`));
+  for (const personalData of ['911', '222-33-44', 'Невский', 'кв. 5', 'Ирина', 'Петрова', 'Ольга', '921', 'Домофон'])
+    assert.ok(!ownerText.includes(personalData), `в сообщении владелице нет «${personalData}»: ${ownerText}`);
+  assert.match(ownerText, /🚚 Санкт-Петербург/);
+  assert.match(ownerText, /💌 «С днём рождения!»/);
+  assert.match(ownerText, new RegExp(`<a href="tg://user\\?id=${buyerId}">Покупатель в Telegram</a> @anna`));
+  assert.match(ownerText, /Контакты и адрес — в админке/);
+  const buttons = ownerCall.payload.reply_markup.inline_keyboard.flat();
+  assert.ok(buttons.some((button) => button.web_app?.url === 'https://fleur.test/admin.html'));
+  assert.ok(buttons.some((button) => button.callback_data === `reply:${buyerId}:${response.body.id}`));
+  // покупателю — его собственный адрес в подтверждении можно и нужно
+  assert.match(testHelpers.lastTextTo(buyerId), /Невский проспект, 28, кв\. 5/);
+});
+
 test('количество: поштучно — не меньше минимума, букетов — не больше 10, скрытые букеты не заказать', async () => {
   assert.match(
     (await shop.placeOrder(nextBuyer(), [[9, 3]])).body.error,

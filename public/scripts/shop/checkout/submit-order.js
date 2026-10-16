@@ -1,4 +1,5 @@
 // Отправка заказа и экран «Спасибо»: с онлайн-оплатой — кнопка «Оплатить» ведёт на страницу ЮKassa.
+// Без галочки согласия на обработку данных заказ не уходит (сервер тоже проверит).
 import { state } from '../state.js';
 import { getElement } from '../../shared/dom.js';
 import { formatRubles } from '../../shared/format.js';
@@ -12,6 +13,7 @@ import { loadMyOrders } from '../orders/my-orders.js';
 import { checkoutState } from './checkout-state.js';
 import { updateSubmitButton } from './delivery-quote.js';
 import { resetSlotChoice } from './checkout-form.js';
+import { hasConsent, resetConsent, updateConsentLock } from './consent.js';
 
 let newOrderPayUrl = null;
 
@@ -28,11 +30,13 @@ function readOrderForm() {
     recipient: getElement('t_recipient').checked ? fieldValue('f_recipient') : '',
     card_text: getElement('t_card').checked ? fieldValue('f_card') : '',
     comment: fieldValue('f_comment'),
+    consent: hasConsent(),
   };
 }
 
 /** Что проверить до отправки: текст ошибки или '' */
 function findFormProblem() {
+  if (!hasConsent()) return 'Отметьте согласие на обработку данных';
   if (!checkoutState.slot) return 'Выберите время доставки';
   if (getElement('quote').classList.contains('err')) {
     getElement('f_address').focus();
@@ -56,6 +60,7 @@ function resetAfterOrder(order) {
   getElement('f_comment').value = '';
   getElement('t_card').checked = false;
   getElement('cardBox').classList.add('hidden');
+  resetConsent();
 }
 
 function showDonePage(result) {
@@ -97,7 +102,7 @@ async function submitOrder(event) {
     errorBox.textContent = error.message;
     vibrateNotification('error');
   } finally {
-    submitButton.disabled = false;
+    updateConsentLock();
     updateSubmitButton();
   }
 }

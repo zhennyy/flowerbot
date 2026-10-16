@@ -46,6 +46,10 @@ ALTER TABLE orders ADD COLUMN pay_url TEXT;
 PRAGMA user_version = 10;
 `;
 
+// Что добавили миграции после baseline (002 — согласие на обработку персональных данных)
+const AFTER_BASELINE_SQL = 'ALTER TABLE orders ADD COLUMN consent_at TEXT;';
+const ALL_MIGRATIONS = ['001_baseline.sql', '002_order_consent.sql'];
+
 const columnsOf = (connection, tableName) =>
   connection
     .prepare(`PRAGMA table_info(${tableName})`)
@@ -105,8 +109,10 @@ test('старая база: миграция ничего не меняет в 
       .prepare('SELECT name FROM _app_migrations')
       .all()
       .map((row) => row.name),
-    ['001_baseline.sql'],
+    ALL_MIGRATIONS,
   );
+  // данные те же; у старых заказов согласия нет — consent_at пустой
+  dumpBefore.orders = dumpBefore.orders.map((order) => ({ ...order, consent_at: null }));
   for (const [tableName, rowsBefore] of Object.entries(dumpBefore))
     assert.deepEqual(migrated.prepare(`SELECT * FROM ${tableName}`).all(), rowsBefore, tableName);
   assert.equal(migrated.pragma('user_version', { simple: true }), 10);
@@ -147,15 +153,58 @@ test('старая база: миграция ничего не меняет в 
   }
 });
 
-test('новая база по миграциям совпадает со старой по таблицам и колонкам (тип, NOT NULL, значение по умолчанию)', () => {
+test('новая база по миграциям совпадает со старой (+ consent_at) по таблицам и колонкам (тип, NOT NULL, значение по умолчанию)', () => {
   const oldConnection = new Database(newTemporaryPath('flowerbot-schema-'));
-  oldConnection.exec(OLD_SCHEMA_SQL);
+  oldConnection.exec(OLD_SCHEMA_SQL + AFTER_BASELINE_SQL);
   const freshConnection = new Database(path.join(process.env.DATA_DIR, 'shop.db'), { readonly: true });
   assert.deepEqual(tableNamesOf(freshConnection), ['_app_migrations', ...tableNamesOf(oldConnection)]);
   for (const tableName of tableNamesOf(oldConnection))
     assert.deepEqual(columnsOf(freshConnection, tableName), columnsOf(oldConnection, tableName), tableName);
   oldConnection.close();
   freshConnection.close();
+});
+
+test('миграция 002 на рабочей базе (уже с 001): колонка consent_at добавляется, заказы на месте, Prisma её пишет', async () => {
+  const workingDatabasePath = newTemporaryPath('flowerbot-working-');
+  const workingConnection = new Database(workingDatabasePath);
+  workingConnection.exec(OLD_SCHEMA_SQL);
+  workingConnection.exec(
+    "CREATE TABLE _app_migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT (datetime('now'))); INSERT INTO _app_migrations (name) VALUES ('001_baseline.sql');",
+  );
+  workingConnection
+    .prepare(
+      "INSERT INTO orders (user_id, customer_name, phone, address, delivery_date, delivery_time, items, total) VALUES (7, 'Анна', '+7 900', 'Невский, 1', '2026-10-01', '12:00–15:00', '[]', 2380)",
+    )
+    .run();
+  const ordersBefore = workingConnection.prepare('SELECT * FROM orders').all();
+  workingConnection.close();
+
+  runMigrations(workingDatabasePath);
+  runMigrations(workingDatabasePath);
+
+  const migrated = new Database(workingDatabasePath);
+  assert.deepEqual(
+    migrated
+      .prepare('SELECT name FROM _app_migrations ORDER BY name')
+      .all()
+      .map((row) => row.name),
+    ALL_MIGRATIONS,
+  );
+  assert.deepEqual(
+    migrated.prepare('SELECT * FROM orders').all(),
+    ordersBefore.map((order) => ({ ...order, consent_at: null })),
+  );
+  migrated.close();
+
+  const { PrismaBetterSqlite3 } = require('@prisma/adapter-better-sqlite3');
+  const { PrismaClient } = require('./generated');
+  const prisma = new PrismaClient({ adapter: new PrismaBetterSqlite3({ url: `file:${workingDatabasePath}` }) });
+  try {
+    await prisma.order.update({ where: { id: 1 }, data: { consent_at: '2026-10-16 09:00:00' } });
+    assert.equal((await prisma.order.findUnique({ where: { id: 1 } })).consent_at, '2026-10-16 09:00:00');
+  } finally {
+    await prisma.$disconnect();
+  }
 });
 
 test('база очень старой версии (до v10) — понятная ошибка вместо поломанной схемы', () => {

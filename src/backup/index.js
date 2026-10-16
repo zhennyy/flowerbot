@@ -1,5 +1,7 @@
 // Резервная копия «Флёра» одним ZIP-архивом (без сторонних библиотек).
 // Внутри: букеты, заказы, отзывы, переписка, напоминания, настройки (JSON и CSV для Excel) и фото.
+// Архив уходит владелице через Telegram (зарубежный сервис), поэтому в нём нет персональных данных покупателей
+// (152-ФЗ): имени, телефона, адреса, получателя и комментария к заказу. Полная копия — ночной бэкап на сервере.
 const fs = require('node:fs');
 const path = require('node:path');
 const { database } = require('../database');
@@ -96,10 +98,18 @@ function orderItemsText(order) {
   }
 }
 
+// Поля заказа с персональными данными покупателя — в архив для Telegram не попадают
+const PERSONAL_ORDER_FIELDS = ['customer_name', 'phone', 'address', 'recipient', 'comment'];
+const withoutPersonalData = (order) =>
+  Object.fromEntries(Object.entries(order).filter(([fieldName]) => !PERSONAL_ORDER_FIELDS.includes(fieldName)));
+
 async function makeBackup({ uploadsDir, photosDir }) {
   const products = await database.product.findMany({ orderBy: { id: 'asc' } });
-  const allOrders = await database.order.findMany({ orderBy: { id: 'asc' } });
-  const messages = await database.message.findMany({ orderBy: { id: 'asc' } });
+  const allOrders = (await database.order.findMany({ orderBy: { id: 'asc' } })).map(withoutPersonalData);
+  // имя из Telegram в переписке тоже не нужно — покупателя видно по user_id
+  const messages = (await database.message.findMany({ orderBy: { id: 'asc' } })).map(
+    ({ name: _name, ...message }) => message,
+  );
   const reminders = await database.reminder.findMany({ orderBy: { id: 'asc' } });
   // служебные отметки «фото из проекта уже поставлено» в архиве не нужны
   const settings = (await database.setting.findMany()).filter((setting) => !setting.key.startsWith('photo_applied:'));
@@ -129,9 +139,6 @@ async function makeBackup({ uploadsDir, photosDir }) {
     created_at: order.created_at,
     status: order.status,
     payment: order.payment_status,
-    customer: order.customer_name,
-    phone: order.phone,
-    address: order.address,
     date: order.delivery_date,
     time: order.delivery_time,
     items: orderItemsText(order),
@@ -150,7 +157,7 @@ async function makeBackup({ uploadsDir, photosDir }) {
     { name: 'settings.json', data: JSON.stringify(settings, null, 2) },
     {
       name: 'README.txt',
-      data: `Резервная копия «Флёр» от ${timestamp.replace('_', ' ')} (МСК).\n\nbouquets.csv и orders.csv открываются в Excel/Numbers.\nphotos/ — фото букетов (номер в начале — id товара).\n\nВ архиве телефоны и адреса покупателей — храните его у себя и не выкладывайте на GitHub.\n`,
+      data: `Резервная копия «Флёр» от ${timestamp.replace('_', ' ')} (МСК).\n\nbouquets.csv и orders.csv открываются в Excel/Numbers.\nphotos/ — фото букетов (номер в начале — id товара).\n\nПерсональных данных покупателей (имя, телефон, адрес, получатель, комментарий) в архиве нет — по 152-ФЗ они хранятся только на сервере в России. Полная копия базы — в ночном резервном копировании сервера.\n`,
     },
   );
   return {

@@ -1,4 +1,4 @@
-/* Оформление заказа: форма, дата и интервалы, доставка, оплата, открытка; экран «Спасибо» */
+/* Оформление заказа: форма, дата и интервалы, доставка, оплата, открытка, согласие на обработку данных; экран «Спасибо» */
 form {
   padding: 0 16px;
 }
@@ -165,6 +165,35 @@ textarea {
 .quote small {
   color: var(--muted);
   display: block;
+}
+
+/* Согласие на обработку персональных данных — над кнопкой «Заказать» */
+.consent {
+  background: var(--card);
+  border-radius: 18px;
+  padding: 14px;
+  margin: 12px 0;
+  box-shadow: var(--shadow);
+}
+.consent-check {
+  align-items: flex-start;
+  margin: 0;
+  line-height: 1.4;
+}
+.consent-check input {
+  flex: none;
+  margin-top: 1px;
+}
+.consent a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid currentColor;
+}
+.consent-note {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+  margin: 8px 0 0 28px;
 }
 
 .done {

@@ -1,4 +1,5 @@
-// Сводка для владелицы: что везём сегодня/завтра, непрочитанные сообщения, что заканчивается
+// Сводка для владелицы: что везём сегодня/завтра, непрочитанные сообщения, что заканчивается.
+// Уходит в Telegram — поэтому без адресов и контактов покупателей (152-ФЗ), только зона доставки
 const { STATUSES, getOrdersForDate } = require('../orders');
 const { escapeHtml, formatDate } = require('../orders/texts');
 const { getLowStock } = require('../catalog');
@@ -20,13 +21,16 @@ async function summaryText(isoDate, title) {
   for (const order of dayOrders) {
     lines.push(`<b>${order.delivery_time}</b> · №${order.id} ${STATUSES[order.status].split(' ')[0]}`);
     lines.push(`   ${order.items.map((orderItem) => `${escapeHtml(orderItem.name)} ×${orderItem.qty}`).join(', ')}`);
-    lines.push(`   📍 ${escapeHtml(order.address)}${order.card_text ? ' · 💌 открытка' : ''}`);
+    lines.push(
+      `   🚚 ${escapeHtml(order.delivery_zone || 'зона уточняется')}${order.card_text ? ' · 💌 открытка' : ''}`,
+    );
   }
   if (dayOrders.length) {
     const dayTotal = dayOrders.reduce((sum, order) => sum + order.total, 0);
     lines.push(
       '',
       `Итого: ${dayOrders.length} ${deliveriesWord(dayOrders.length)} на ${dayTotal.toLocaleString('ru-RU')} ₽`,
+      'Адреса и контакты — в админке',
     );
   }
   const unreadCount = await countUnread();

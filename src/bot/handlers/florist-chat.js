@@ -27,9 +27,9 @@ function isTooChatty(userId) {
   return recentTimes.length > FLOOD_MAX_MESSAGES;
 }
 
-// «Анна (@anna)» — для сообщений владелице
-const senderLabel = (telegramUser, name) =>
-  `${escapeHtml(name)}${telegramUser.username ? ' (@' + escapeHtml(telegramUser.username) + ')' : ''}`;
+// «Анна (@anna)» — для сообщений владелице: только имя в Telegram (без фамилии) и @username
+const senderLabel = (telegramUser) =>
+  `${escapeHtml(telegramUser.first_name || 'Покупатель')}${telegramUser.username ? ' (@' + escapeHtml(telegramUser.username) + ')' : ''}`;
 const replyButtons = (bot, userId, orderId) =>
   Markup.inlineKeyboard([
     Markup.button.callback('↩️ Ответить', `reply:${userId}:${orderId || 0}`),
@@ -51,7 +51,7 @@ async function forwardFromBuyer(bot, context, { text = null, photo = null, order
   });
   const ownerId = getOwnerId();
   if (ownerId) {
-    const heading = `💬 ${senderLabel(context.from, customerName(context.from))}${orderId ? ` · заказ №${orderId}` : ''}`;
+    const heading = `💬 ${senderLabel(context.from)}${orderId ? ` · заказ №${orderId}` : ''}`;
     const keyboard = replyButtons(bot, context.from.id, orderId);
     if (photo) {
       await bot.telegram
@@ -168,7 +168,7 @@ function registerIncomingMessageHandlers(bot) {
         await bot.telegram
           .sendMessage(
             ownerId,
-            `📝 Отзыв к заказу №${waiting.orderId} от ${senderLabel(context.from, context.from.first_name || '')}:\n\n${escapeHtml(reviewText)}`,
+            `📝 Отзыв к заказу №${waiting.orderId} от ${senderLabel(context.from)}:\n\n${escapeHtml(reviewText)}`,
             { parse_mode: 'HTML', ...replyButtons(bot, context.from.id, waiting.orderId) },
           )
           .catch(() => {});

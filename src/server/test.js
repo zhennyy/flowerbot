@@ -53,3 +53,19 @@ test('кривой JSON — короткая ошибка без стека; в�
   assert.equal((await fetch(shop.base + '/styles/admin/base.css')).status, 200);
   assert.equal((await fetch(shop.base + '/photos/1-utro-v-provanse.jpg')).status, 200);
 });
+
+test('юридические страницы (152-ФЗ) отдаются: политика, согласие, оферта', async () => {
+  for (const [pagePath, title] of [
+    ['/legal/privacy.html', 'Политика обработки персональных данных'],
+    ['/legal/consent.html', 'Согласие на обработку персональных данных'],
+    ['/legal/offer.html', 'Публичная оферта'],
+  ]) {
+    const response = await fetch(shop.base + pagePath);
+    assert.equal(response.status, 200, pagePath);
+    assert.match(response.headers.get('content-type'), /text\/html/);
+    const pageHtml = await response.text();
+    assert.ok(pageHtml.includes(`<h1>${title}</h1>`), pagePath);
+    assert.ok(pageHtml.includes('Шаблон: заполните реквизиты перед запуском'), pagePath);
+  }
+  assert.equal((await fetch(shop.base + '/legal/legal.css')).status, 200);
+});

@@ -16,6 +16,11 @@ delete process.env.TELEGRAM_API_ROOT;
 process.env.PORT = String(30000 + Math.floor(Math.random() * 20000));
 process.env.HOST = '127.0.0.1';
 
+// Под `node --test` служебные сообщения приложения («База: применена миграция…», «📷 Фото…») — в stderr:
+// в stdout дочерний процесс шлёт раннеру сериализованный отчёт, и посторонний вывод иногда ломал его
+// («Unable to deserialize cloned data»), из-за чего случайный файл тестов падал целиком.
+if (process.env.NODE_TEST_CONTEXT) console.log = (...messages) => console.error(...messages);
+
 const OWNER_ID = 1001;
 
 // ---- подставная ЮKassa: запоминаем платежи, чтобы проверять суммы и метки ----
@@ -156,7 +161,7 @@ async function start() {
       headers: response.headers,
     }));
   const { database } = require('../database');
-  // Оформить заказ из витрины: [[id товара, количество, размер?]] на завтра, Невский проспект
+  // Оформить заказ из витрины: [[id товара, количество, размер?]] на завтра, Невский проспект, с галочкой согласия
   const placeOrder = (userId, items, formFields = {}) =>
     call(userId, 'POST', '/api/orders', {
       items: items.map(([id, qty, size]) => ({ id, qty, size })),
@@ -166,6 +171,7 @@ async function start() {
       delivery_date: tomorrowInMoscow(),
       delivery_time: '12:00–15:00',
       delivery_zone: 'city',
+      consent: true,
       ...formFields,
     });
   // ЮKassa сообщает о платеже (как настоящий вебхук)

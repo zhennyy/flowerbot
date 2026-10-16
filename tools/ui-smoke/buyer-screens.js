@@ -1,5 +1,6 @@
 // Экраны покупателя: каталог, поиск, карточки товара (обычная, с размерами, поштучная), корзина с допами,
-// оформление (город, Ленобласть, ошибка адреса, открытка), «спасибо», «Мои заказы», повтор заказа, тёмная тема, ноутбук.
+// оформление (город, Ленобласть, ошибка адреса, открытка, согласие на обработку данных), «спасибо», «Мои заказы»,
+// повтор заказа, тёмная тема, ноутбук.
 const { BUYER_ID, NEW_BUYER_ID, normalizeOrders } = require('./test-data');
 const { telegramLog, DESKTOP_VIEWPORT } = require('./browser');
 
@@ -57,7 +58,27 @@ async function runCatalogScreens(runner, page) {
   );
 }
 
-async function runCartAndCheckout(runner, page) {
+// Согласие на обработку данных (152-ФЗ): без галочки «Заказать» неактивна и заказ не уходит,
+// ссылка на документ открывается через Telegram.WebApp.openLink и галочку не ставит
+async function checkConsentLock(runner, page, shop) {
+  const { check } = runner;
+  const ordersBefore = await shop.database.order.count();
+  check('без согласия кнопка «Заказать» неактивна', await page.locator('#submitBtn').isDisabled());
+  await page.locator('#submitBtn').click({ force: true });
+  await page.waitForTimeout(300);
+  check('без согласия заказ не отправляется', (await shop.database.order.count()) === ordersBefore);
+  await page.locator('.consent-check a').click();
+  const links = (await telegramLog(page)).links;
+  check(
+    'ссылка на согласие открывается через Telegram и не ставит галочку',
+    links.at(-1)?.endsWith('/legal/consent.html') && !(await page.locator('#t_consent').isChecked()),
+    JSON.stringify(links),
+  );
+  await page.locator('#t_consent').check();
+  check('с согласием кнопка «Заказать» активна', await page.locator('#submitBtn').isEnabled());
+}
+
+async function runCartAndCheckout(runner, page, shop) {
   const { snap, check } = runner;
   await page.locator('#cartbar').click();
   await snap(page, 'b12-cart', { scroller: '#cartPage' });
@@ -76,6 +97,7 @@ async function runCartAndCheckout(runner, page) {
   await page.locator('#zones .slot', { hasText: 'Ленобласть' }).click();
   await fillAddress(page, 'Гатчина, ул. Мира, 2');
   await snap(page, 'b16-checkout-region', { scroller: '#checkoutPage' });
+  await checkConsentLock(runner, page, shop);
   await page.locator('#submitBtn').click();
   await snap(page, 'b17-checkout-no-time', { scroller: '#checkoutPage' });
   check(
@@ -108,8 +130,14 @@ async function runCartAndCheckout(runner, page) {
   const links = (await telegramLog(page)).links;
   check(
     '«Оплатить» открывает страницу ЮKassa',
-    links.length === 1 && links[0].startsWith('https://pay.test/'),
+    links.length === 2 && links[1].startsWith('https://pay.test/'),
     JSON.stringify(links),
+  );
+  check(
+    'в заказе записано согласие на обработку данных',
+    Boolean(
+      (await shop.database.order.findFirst({ where: { user_id: BUYER_ID }, orderBy: { id: 'desc' } })).consent_at,
+    ),
   );
   check(
     'корзина пуста после заказа',
@@ -161,7 +189,7 @@ async function runBuyerScreens(runner, shop) {
   const { openPage, snap } = runner;
   const page = await openPage(BUYER_ID, { name: 'buyer', waitFor: '#grid .card' });
   await runCatalogScreens(runner, page);
-  await runCartAndCheckout(runner, page);
+  await runCartAndCheckout(runner, page, shop);
   await runOrderScreens(runner, page, shop);
   await page.context().close();
 
@@ -173,6 +201,14 @@ async function runBuyerScreens(runner, shop) {
   await dark.locator('#hord').click();
   await dark.waitForSelector('#myOrders .myord');
   await snap(dark, 'b26-my-orders-dark', { scroller: '#ordersPage' });
+  // оформление в тёмной теме: галочка согласия и ссылки должны читаться
+  await dark.locator('#ordersPage .back').click();
+  await card(dark, 'Весенний микс').click();
+  await dark.locator('#sheet .big').click();
+  await dark.locator('#sheet .x-close').click();
+  await dark.locator('#cartbar').click();
+  await dark.locator('#cartFooter .big').click();
+  await snap(dark, 'b33-checkout-dark', { scroller: '#checkoutPage' });
   await dark.context().close();
 
   const desktop = await openPage(BUYER_ID, {

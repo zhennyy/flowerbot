@@ -94,11 +94,16 @@ test('/start, /myid и /admin', async () => {
   assert.match(lastText(BUYER_ID), /Не знаю такой команды/);
 });
 
-test('новый заказ: владелице — с кнопками статусов, покупателю — «принят» с напоминанием', async () => {
+test('новый заказ: владелице — с кнопками статусов и без контактов, покупателю — «принят» с напоминанием', async () => {
   const ownerNote = testHelpers.sentTo(OWNER_ID).find((call) => /Новый заказ!/.test(testHelpers.textOf(call)));
   assert.match(
     testHelpers.textOf(ownerNote),
-    new RegExp(`Заказ №${orderId}[\\s\\S]*👤 Анна @anna · \\+7 900 123-45-67`),
+    new RegExp(`Заказ №${orderId}[\\s\\S]*👤 <a href="tg://user\\?id=${BUYER_ID}">Покупатель в Telegram</a> @anna`),
+  );
+  assert.doesNotMatch(
+    testHelpers.textOf(ownerNote),
+    /123-45-67|Невский|Анна/,
+    'телефон, адрес и имя — только в админке',
   );
   assert.deepEqual(
     buttonsOf(ownerNote)
@@ -120,11 +125,12 @@ test('кнопки статусов: только владелица; неизв
   assert.equal((await shop.findOrder(orderId)).status, 'new');
   await pressButton(OWNER_ID, `st:${orderId}:confirmed`);
   assert.equal((await shop.findOrder(orderId)).status, 'confirmed');
-  assert.ok(
-    testHelpers.telegramCalls.some(
-      (call) => call.method === 'editMessageText' && /Подтверждён/.test(call.payload.text),
-    ),
+  const statusEdit = testHelpers.telegramCalls.findLast(
+    (call) => call.method === 'editMessageText' && /Подтверждён/.test(call.payload.text),
   );
+  assert.ok(statusEdit);
+  assert.match(statusEdit.payload.text, /Контакты и адрес — в админке/);
+  assert.doesNotMatch(statusEdit.payload.text, /123-45-67|Невский/, 'и после смены статуса — без контактов');
 });
 
 test('вопрос флористу и ответ владелицы через кнопку «Ответить»', async () => {
@@ -223,4 +229,6 @@ test('«Мои заказы» и сводка владелицы на завтр
     ),
   );
   assert.match(lastText(OWNER_ID), /Итого: 1 доставка на 2\s780 ₽/);
+  assert.match(lastText(OWNER_ID), /🚚 Санкт-Петербург/);
+  assert.doesNotMatch(lastText(OWNER_ID), /Невский/, 'в сводке — зона доставки, адрес — в админке');
 });

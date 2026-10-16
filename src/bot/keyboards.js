@@ -12,20 +12,24 @@ async function orderKeyboard(order) {
   return Markup.inlineKeyboard(rows);
 }
 
-// Кнопки смены статуса под сообщением владелице
-const statusButtons = (orderId) =>
+// Кнопки под заказом у владелицы: статусы, админка (там контакты и адрес) и «Написать покупателю»
+const statusButtons = (order) =>
   Markup.inlineKeyboard([
     [
-      Markup.button.callback('✅ Подтвердить', `st:${orderId}:confirmed`),
-      Markup.button.callback('💐 Собираем', `st:${orderId}:assembling`),
+      Markup.button.callback('✅ Подтвердить', `st:${order.id}:confirmed`),
+      Markup.button.callback('💐 Собираем', `st:${order.id}:assembling`),
     ],
     [
-      Markup.button.callback('🚚 В пути', `st:${orderId}:delivering`),
-      Markup.button.callback('🌷 Доставлен', `st:${orderId}:done`),
+      Markup.button.callback('🚚 В пути', `st:${order.id}:delivering`),
+      Markup.button.callback('🌷 Доставлен', `st:${order.id}:done`),
     ],
     [
-      Markup.button.callback('📸 Фото букета', `photo:${orderId}`),
-      Markup.button.callback('❌ Отменить', `st:${orderId}:cancelled`),
+      Markup.button.callback('📸 Фото букета', `photo:${order.id}`),
+      Markup.button.callback('❌ Отменить', `st:${order.id}:cancelled`),
+    ],
+    [
+      Markup.button.webApp('⚙️ Открыть админку', adminUrl()),
+      Markup.button.callback('↩️ Написать покупателю', `reply:${order.user_id}:${order.id}`),
     ],
   ]);
 

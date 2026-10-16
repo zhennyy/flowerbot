@@ -72,7 +72,7 @@ async function startPayment(bot, order) {
   const sentMessage = await bot.telegram
     .sendMessage(
       order.user_id,
-      `🌷 <b>Заказ №${order.id} оформлен!</b>\nОсталось оплатить — после оплаты флорист сразу возьмётся за букет.\n\n${orderText(order, false, false)}`,
+      `🌷 <b>Заказ №${order.id} оформлен!</b>\nОсталось оплатить — после оплаты флорист сразу возьмётся за букет.\n\n${orderText(order, false)}`,
       {
         parse_mode: 'HTML',
         ...Markup.inlineKeyboard([Markup.button.url(`💳 Оплатить ${formatRubles(order.total)}`, paymentUrl)]),

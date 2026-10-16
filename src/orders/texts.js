@@ -1,4 +1,4 @@
-// Тексты о заказе для Telegram: чек для покупателя и владелицы, короткие сообщения о смене статуса
+// Тексты о заказе для Telegram: чек для покупателя, заказ для владелицы (без персональных данных), сообщения о смене статуса
 const { STATUSES } = require('./index');
 const { moscowDate } = require('../calendar');
 
@@ -38,11 +38,9 @@ const shortWhen = (order) => `${niceDay(order.delivery_date)}, ${order.delivery_
 // «🆕 Новый» → «Новый»
 const statusLabel = (status) => STATUSES[status].replace(/^\S+\s/, '');
 
-// Текст заказа — спокойный, без лишних эмодзи: что, когда, куда, сколько
-function orderText(order, forOwner = false, withHeader = true) {
+// Состав заказа и суммы — одинаково для покупателя и владелицы
+function itemLines(order) {
   const lines = [];
-  if (withHeader) lines.push(`<b>Заказ №${order.id}</b> · ${statusLabel(order.status)}`);
-  lines.push(`🕒 ${niceWhen(order)}`, `📍 ${escapeHtml(order.address)}`, '');
   for (const orderItem of order.items) {
     const quantityText = orderItem.qty > 1 || orderItem.unit ? ` × ${orderItem.qty}${orderItem.unit ? ' шт' : ''}` : '';
     lines.push(`${escapeHtml(orderItem.name)}${quantityText} — ${formatRubles(orderItem.price * orderItem.qty)}`);
@@ -53,15 +51,42 @@ function orderText(order, forOwner = false, withHeader = true) {
       : `Доставка — ${order.delivery_fee ? formatRubles(order.delivery_fee) : 'бесплатно'}`,
   );
   lines.push(`<b>Итого ${formatRubles(order.total)}</b>`);
+  return lines;
+}
+
+// Текст заказа для покупателя — спокойный, без лишних эмодзи: что, когда, куда, сколько.
+// Свой адрес и получателя покупатель видит в своём чате — это его данные.
+function orderText(order, withHeader = true) {
+  const lines = [];
+  if (withHeader) lines.push(`<b>Заказ №${order.id}</b> · ${statusLabel(order.status)}`);
+  lines.push(`🕒 ${niceWhen(order)}`, `📍 ${escapeHtml(order.address)}`, '', ...itemLines(order));
   const extraLines = [];
   if (order.recipient) extraLines.push(`🎁 ${escapeHtml(order.recipient)}`);
   if (order.card_text) extraLines.push(`💌 «${escapeHtml(order.card_text)}»`);
   if (order.comment) extraLines.push(`💬 ${escapeHtml(order.comment)}`);
-  if (forOwner)
-    extraLines.push(
-      `👤 ${escapeHtml(order.customer_name)}${order.username ? ' @' + escapeHtml(order.username) : ''} · ${escapeHtml(order.phone)}`,
-    );
   if (extraLines.length) lines.push('', ...extraLines);
+  return lines.join('\n');
+}
+
+// Заказ для владелицы в Telegram (152-ФЗ: Telegram — зарубежный сервис). Без имени, телефона, адреса,
+// получателя и комментария (в нём бывают контакты) — всё это в админке на нашем сервере.
+// Из данных покупателя — только ссылка на его профиль Telegram и @username: это данные самого Telegram.
+function ownerOrderText(order) {
+  const lines = [
+    `<b>Заказ №${order.id}</b> · ${statusLabel(order.status)}`,
+    `🕒 ${niceWhen(order)}`,
+    `🚚 ${escapeHtml(order.delivery_zone || 'Зона доставки — уточнить')}`,
+    '',
+    ...itemLines(order),
+    '',
+  ];
+  if (order.card_text) lines.push(`💌 «${escapeHtml(order.card_text)}»`);
+  if (order.recipient) lines.push('🎁 Получатель — другой человек');
+  if (order.comment) lines.push('💬 Есть комментарий к заказу');
+  lines.push(
+    `👤 <a href="tg://user?id=${order.user_id}">Покупатель в Telegram</a>${order.username ? ' @' + escapeHtml(order.username) : ''}`,
+    'Контакты и адрес — в админке',
+  );
   return lines.join('\n');
 }
 
@@ -114,6 +139,7 @@ module.exports = {
   shortWhen,
   statusLabel,
   orderText,
+  ownerOrderText,
   tracker,
   statusNote,
 };

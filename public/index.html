@@ -165,6 +165,19 @@
           <label for="f_comment">Комментарий к заказу</label>
           <input type="text" id="f_comment" maxlength="300" placeholder="Например: позвонить за 30 минут" />
         </fieldset>
+        <div class="consent">
+          <label class="toggle consent-check">
+            <input type="checkbox" id="t_consent" />
+            <span
+              >Я даю
+              <a href="legal/consent.html" data-action="open-legal">согласие на обработку персональных данных</a></span
+            >
+          </label>
+          <p class="consent-note">
+            Оформляя заказ, вы принимаете условия <a href="legal/offer.html" data-action="open-legal">оферты</a> и
+            <a href="legal/privacy.html" data-action="open-legal">политику обработки персональных данных</a>
+          </p>
+        </div>
         <div class="error" id="formError"></div>
       </form>
       <div class="footer"><button class="big" id="submitBtn" form="orderForm">Заказать</button></div>

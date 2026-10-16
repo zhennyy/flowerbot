@@ -45,6 +45,7 @@ async function prepareShop(shop) {
       delivery_date: helpers.tomorrowInMoscow(),
       delivery_time: '12:00–15:00',
       delivery_zone: 'city',
+      consent: true,
       ...formFields,
     });
     return expectOk(response, what);
