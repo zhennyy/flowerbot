@@ -20,6 +20,27 @@ const API_REQUESTS_PER_MINUTE = 120;
 // Загрузка фото из админки — до 8 МБ, остальные запросы — до 100 КБ
 const LARGE_BODY_PATHS = [/^\/api\/admin\/upload$/, /^\/api\/admin\/orders\/\d+\/photo$/];
 
+// Заголовки безопасности (на сервере nginx добавляет свои, но магазин защищён и без него).
+// CSP страниц витрины и админки: скрипты — только свои и telegram-web-app.js; стили и шрифты — свои и Google Fonts;
+// blob: у картинок — фото из Telegram в админке грузятся через сервер и показываются как blob.
+// frame-ancestors не ставим: витрину открывает Telegram.
+const SECURITY_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+};
+const PAGE_CSP = [
+  "default-src 'self'",
+  "script-src 'self' https://telegram.org",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com",
+  "img-src 'self' data: blob: https:",
+  "connect-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join('; ');
+
 function createApp(bot) {
   const app = express();
   // перед сервером стоит nginx на этом же компьютере — берём настоящий IP посетителя из его заголовка
@@ -33,6 +54,12 @@ function createApp(bot) {
       ? ownerAuth(request, response, () => parseLargeJson(request, response, next))
       : parseSmallJson(request, response, next),
   );
+
+  app.use((request, response, next) => {
+    response.set(SECURITY_HEADERS);
+    if (!request.path.startsWith('/api/')) response.set('Content-Security-Policy', PAGE_CSP);
+    next();
+  });
 
   // Фото, загруженные из админки (на сервере — /data/flowerbot/uploads), и сама витрина
   fs.mkdirSync(photos.uploadsDir, { recursive: true });
@@ -83,4 +110,4 @@ function startServer(bot) {
   return app.listen(port, process.env.HOST || '127.0.0.1', () => console.log(`🌐 Витрина: http://localhost:${port}`));
 }
 
-module.exports = { createApp, startServer };
+module.exports = { createApp, startServer, SECURITY_HEADERS, PAGE_CSP };

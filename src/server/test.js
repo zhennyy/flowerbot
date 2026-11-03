@@ -69,3 +69,16 @@ test('юридические страницы (152-ФЗ) отдаются: по�
   }
   assert.equal((await fetch(shop.base + '/legal/legal.css')).status, 200);
 });
+
+test('заголовки безопасности и CSP у витрины и админки, у API — без CSP', async () => {
+  const { SECURITY_HEADERS, PAGE_CSP } = require('./index');
+  for (const page of ['/', '/admin.html']) {
+    const response = await fetch(shop.base + page);
+    for (const [name, value] of Object.entries(SECURITY_HEADERS)) assert.equal(response.headers.get(name), value, name);
+    assert.equal(response.headers.get('content-security-policy'), PAGE_CSP, page);
+  }
+  assert.match(PAGE_CSP, /script-src 'self' https:\/\/telegram\.org;/);
+  const api = await fetch(shop.base + '/api/products');
+  assert.equal(api.headers.get('x-content-type-options'), 'nosniff');
+  assert.equal(api.headers.get('content-security-policy'), null);
+});
